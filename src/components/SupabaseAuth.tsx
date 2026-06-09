@@ -31,7 +31,7 @@ export default function SupabaseAuth({ onSessionChange, userId, onSyncRequest, s
   const [showSql, setShowSql] = useState(false);
   const [copiedSql, setCopiedSql] = useState(false);
 
-  const isConfigured = !!(import.meta as any).env?.VITE_SUPABASE_ANON_KEY;
+  const isConfigured = !!supabase;
 
   // Retrieve existing Supabase session if configured
   useEffect(() => {
@@ -232,11 +232,11 @@ export default function SupabaseAuth({ onSessionChange, userId, onSyncRequest, s
             
             <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[9px] font-mono shadow-sm transition-all ${
               userId 
-                ? (isConfigured ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300') 
-                : (isConfigured ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 font-bold' : 'bg-indigo-500/5 border-indigo-500/10 text-indigo-600 font-bold')
+                ? (isConfigured ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border-red-500/30 text-red-300') 
+                : (isConfigured ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 font-bold' : 'bg-red-500/5 border-red-500/10 text-red-650 font-bold')
             }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${isConfigured ? 'bg-emerald-400 animate-ping' : 'bg-indigo-400 animate-pulse'}`} />
-              <span>{isConfigured ? 'SECURE DB' : 'CLOUD SANDBOX'}</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${isConfigured ? 'bg-emerald-400 animate-ping' : 'bg-red-400 animate-pulse'}`} />
+              <span>{isConfigured ? 'SECURE DB' : 'DISCONNECTED'}</span>
             </div>
           </div>
 
@@ -247,21 +247,21 @@ export default function SupabaseAuth({ onSessionChange, userId, onSyncRequest, s
               className={`rounded-2xl p-3.5 mb-5 text-[11px] leading-relaxed space-y-2 border ${
                 userId 
                   ? 'bg-slate-900/80 border-white/5 text-slate-300' 
-                  : 'bg-white/80 backdrop-blur-md border-slate-200/60 text-slate-700 shadow-sm shadow-[#0a3d36]/5'
+                  : 'bg-red-50/85 backdrop-blur-md border-red-100 text-red-800 shadow-sm'
               }`}
             >
-              <div className="flex items-center gap-2 font-bold font-mono text-emerald-700">
-                <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0" />
-                <span>SANDBOX MODE ACTIVE</span>
+              <div className="flex items-center gap-2 font-bold font-mono text-red-700">
+                <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0 text-red-600" />
+                <span>SUPABASE CONNECTION REQUIRED</span>
               </div>
-              <p className={userId ? 'text-slate-400 text-[10.5px]' : 'text-slate-600 text-[10.5px]'}>
-                Operates instantly using a fast virtual cloud sandbox. To connect to live production PostgreSQL, add your tokens in AI Studio's <strong>Settings / Secrets</strong> tab:
+              <p className={userId ? 'text-slate-400 text-[10.5px]' : 'text-red-700 text-[10.5px]'}>
+                Live Supabase authentication is configured as the sole login method. Please insert your credentials inside AI Studio's <strong>Settings / Secrets</strong> panel to connect:
               </p>
               <div className={`p-2.5 rounded-xl border font-mono text-[9px] space-y-1 select-all ${
-                userId ? 'bg-slate-950/80 border-white/5 text-cyan-400' : 'bg-slate-50 border-slate-200 text-teal-800'
+                userId ? 'bg-slate-950/80 border-white/5 text-cyan-400' : 'bg-red-50/55 border-red-200/50 text-red-900'
               }`}>
-                <div>VITE_SUPABASE_URL = "https://your-proj.supabase.co"</div>
-                <div>VITE_SUPABASE_ANON_KEY = "your-anon-role-id"</div>
+                <div>VITE_SUPABASE_URL = "https://your-project.supabase.co"</div>
+                <div>VITE_SUPABASE_ANON_KEY = "your-anon-rolekey"</div>
               </div>
             </div>
           )}

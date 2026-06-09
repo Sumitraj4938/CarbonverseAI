@@ -44,194 +44,53 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
 
     const normalEmail = email.trim().toLowerCase();
 
-    // 1. Live Supabase Authentication
-    if (isConfigured) {
-      try {
-        if (isSignUp) {
-          const { data, error } = await supabase!.auth.signUp({
-            email: normalEmail,
-            password,
-            options: {
-              data: {
-                display_name: name.trim() || 'Eco Pioneer'
-              }
-            }
-          });
-
-          if (error) throw error;
-          
-          if (data.user) {
-            if (data.session) {
-              setSuccessMessage("Account created successfully!");
-              onLoginSuccess(data.session);
-            } else {
-              setSuccessMessage("Sign up complete! Please check your email for a verification link.");
-            }
-          }
-        } else {
-          const { data, error } = await supabase!.auth.signInWithPassword({
-            email: normalEmail,
-            password
-          });
-
-          if (error) throw error;
-
-          if (data.session) {
-            setSuccessMessage("Successfully logged in!");
-            onLoginSuccess(data.session);
-          }
-        }
-      } catch (err: any) {
-        setErrorMessage(err.message || "Authentication failed. Check your network or credentials.");
-      } finally {
-        setAuthLoading(false);
-      }
+    // Enforce live Supabase Authentication
+    if (!isConfigured) {
+      setErrorMessage("Supabase authentication is not configured in the frontend. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in AI Studio's Settings > Secrets tab to activate your database connection.");
+      setAuthLoading(false);
       return;
     }
 
-    // 2. Simulated Local Sandbox Authentication
-    setTimeout(() => {
-      try {
-        const users = JSON.parse(localStorage.getItem(SIMULATED_USERS_KEY) || '[]');
+    try {
+      if (isSignUp) {
+        const { data, error } = await supabase!.auth.signUp({
+          email: normalEmail,
+          password,
+          options: {
+            data: {
+              display_name: name.trim() || 'Eco Pioneer'
+            }
+          }
+        });
+
+        if (error) throw error;
         
-        if (isSignUp) {
-          // Check if user already exists
-          const existingUser = users.find((u: any) => u.email === normalEmail);
-          if (existingUser) {
-            throw new Error("An account with this email address already exists in the sandbox.");
+        if (data.user) {
+          if (data.session) {
+            setSuccessMessage("Account created successfully!");
+            onLoginSuccess(data.session);
+          } else {
+            setSuccessMessage("Sign up complete! Please check your email for a verification link.");
           }
-
-          // Create standard initial data profile
-          const initialData = {
-            id: 'sim_usr_' + Math.random().toString(36).substr(2, 9),
-            email: normalEmail,
-            name: name.trim() || 'Eco Pioneer',
-            level: 'Tree',
-            xp: 380,
-            greenPoints: 460,
-            streak: 4,
-            calculatorData: {
-              transportation: { carMiles: 140, carType: "hybrid", publicTransitHours: 5, flightsCount: 2 },
-              electricity: { monthlyKwh: 380, renewableRatio: 0.3 },
-              food: { dietType: "omnivore", wasteRatio: 3 },
-              shopping: { clothingSpend: 100, electronicsSpend: 150, miscSpend: 80 },
-              water: { dailyShowers: 12, appliancesWeekly: 6 }
-            },
-            breakdown: {
-              transportation: 1950,
-              electricity: 1420,
-              food: 2150,
-              shopping: 1120,
-              water: 480,
-              total: 7120,
-              carbonScore: 72
-            }
-          };
-
-          // Store simulated user
-          const updatedUsers = [...users, { email: normalEmail, password, profile: initialData }];
-          localStorage.setItem(SIMULATED_USERS_KEY, JSON.stringify(updatedUsers));
-          
-          // Generate active session
-          const simulatedSession = {
-            user: {
-              id: initialData.id,
-              email: normalEmail,
-              user_metadata: { display_name: initialData.name }
-            },
-            simulated: true
-          };
-
-          if (rememberMe) {
-            localStorage.setItem(SIMULATED_SESSION_KEY, JSON.stringify(simulatedSession));
-          }
-
-          setSuccessMessage("Sandbox account created successfully! Unlocking dashboard...");
-          onLoginSuccess(simulatedSession);
-        } else {
-          // Signing In
-          const matchingUser = users.find((u: any) => u.email === normalEmail);
-          
-          // Fallback user if matches the input demo in screenshot
-          if (!matchingUser && normalEmail === 'rajsumit202425@gmail.com' && password === 'sumit1234') {
-            const seedUser = {
-              email: 'rajsumit202425@gmail.com',
-              password: 'sumit1234',
-              profile: {
-                id: 'sim_usr_rajsumit',
-                email: 'rajsumit202425@gmail.com',
-                name: 'Raj Sumit',
-                level: 'Tree',
-                xp: 420,
-                greenPoints: 500,
-                streak: 5,
-                calculatorData: {
-                  transportation: { carMiles: 120, carType: "hybrid", publicTransitHours: 6, flightsCount: 1 },
-                  electricity: { monthlyKwh: 320, renewableRatio: 0.4 },
-                  food: { dietType: "vegetarian", wasteRatio: 2 },
-                  shopping: { clothingSpend: 80, electronicsSpend: 110, miscSpend: 50 },
-                  water: { dailyShowers: 10, appliancesWeekly: 5 }
-                },
-                breakdown: {
-                  transportation: 1650,
-                  electricity: 1220,
-                  food: 1350,
-                  shopping: 820,
-                  water: 380,
-                  total: 5420,
-                  carbonScore: 81
-                }
-              }
-            };
-            users.push(seedUser);
-            localStorage.setItem(SIMULATED_USERS_KEY, JSON.stringify(users));
-            
-            const simulatedSession = {
-              user: {
-                id: seedUser.profile.id,
-                email: seedUser.email,
-                user_metadata: { display_name: seedUser.profile.name }
-              },
-              simulated: true
-            };
-            if (rememberMe) {
-              localStorage.setItem(SIMULATED_SESSION_KEY, JSON.stringify(simulatedSession));
-            }
-            setSuccessMessage("Successfully logged in! Unlocking dashboard...");
-            onLoginSuccess(simulatedSession);
-            return;
-          }
-
-          if (!matchingUser) {
-            throw new Error("No account matches this email address. Switch to 'Sign Up Free' below to register.");
-          }
-
-          if (matchingUser.password !== password) {
-            throw new Error("Invalid secure credentials. Please verify your password entry.");
-          }
-
-          const simulatedSession = {
-            user: {
-              id: matchingUser.profile.id,
-              email: matchingUser.email,
-              user_metadata: { display_name: matchingUser.profile.name }
-            },
-            simulated: true
-          };
-
-          if (rememberMe) {
-            localStorage.setItem(SIMULATED_SESSION_KEY, JSON.stringify(simulatedSession));
-          }
-
-          setSuccessMessage("Authorized successfully! Opening website dashboard...");
-          onLoginSuccess(simulatedSession);
         }
-      } catch (err: any) {
-        setErrorMessage(err.message || "Login failed in Sandbox.");
-      } finally {
-        setAuthLoading(false);
+      } else {
+        const { data, error } = await supabase!.auth.signInWithPassword({
+          email: normalEmail,
+          password
+        });
+
+        if (error) throw error;
+
+        if (data.session) {
+          setSuccessMessage("Successfully logged in!");
+          onLoginSuccess(data.session);
+        }
       }
-    }, 800);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Authentication failed. Check your network, email, or secure credentials.");
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
   return (

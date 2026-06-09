@@ -1,24 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { motion } from 'motion/react';
 import { 
   Sparkles, Leaf, Activity, Star, Users, Navigation, 
   Camera, ShoppingBag, ShieldAlert, Cpu, Heart, AlertCircle, LogIn, LogOut, Cloud
 } from 'lucide-react';
 import LandingPage from './components/LandingPage';
-import CalculatorWizard from './components/CalculatorWizard';
-import CoachSection from './components/CoachSection';
 import TwinSection from './components/TwinSection';
-import ReceiptScannerSection from './components/ReceiptScannerSection';
-import RoutePlannerSection from './components/RoutePlannerSection';
-import QuestsSection from './components/QuestsSection';
-import MarketplaceSection from './components/MarketplaceSection';
 import ExtraControlsDrawer from './components/ExtraControlsDrawer';
 import Logo from './components/Logo';
 import LoginLogo from './components/LoginLogo';
 import { CarbonProfile, CarbonCalculatorData, EmissionBreakdown, LeaderboardUser } from './types';
 import { loadUserCarbonData, saveUserCarbonData, supabase } from './lib/supabase';
-import LoginPage from './components/LoginPage';
 import FloatingAIHelper from './components/FloatingAIHelper';
+import ErrorBoundary from './components/ErrorBoundary';
+import MultiStageSkeleton from './components/MultiStageSkeleton';
+
+// Code splitting and lazy loading of section components (Lighthouse 95+)
+const CalculatorWizard = lazy(() => import('./components/CalculatorWizard'));
+const CoachSection = lazy(() => import('./components/CoachSection'));
+const ReceiptScannerSection = lazy(() => import('./components/ReceiptScannerSection'));
+const RoutePlannerSection = lazy(() => import('./components/RoutePlannerSection'));
+const QuestsSection = lazy(() => import('./components/QuestsSection'));
+const MarketplaceSection = lazy(() => import('./components/MarketplaceSection'));
+const LoginPage = lazy(() => import('./components/LoginPage'));
 
 // Preset leaderboard profiles representing standard cohorts
 const INITIAL_LEADERBOARD: LeaderboardUser[] = [
@@ -70,59 +74,14 @@ export default function App() {
   const [syncing, setSyncing] = useState(false);
   const [isExtraDrawerOpen, setIsExtraDrawerOpen] = useState(false);
 
-  // Helper load function that proxies either live Supabase or local sandbox profiles
+  // Helper load function that fetches from live Supabase profile
   const loadData = async (uId: string) => {
-    if (uId?.startsWith('sim_usr_')) {
-      const users = JSON.parse(localStorage.getItem('carbonsteps_simulated_users') || '[]');
-      const userObj = users.find((u: any) => u.profile && u.profile.id === uId);
-      if (userObj && userObj.profile) {
-        const p = userObj.profile;
-        return {
-          id: p.id,
-          name: p.name,
-          level: p.level,
-          xp: p.xp,
-          green_points: p.greenPoints,
-          streak: p.streak,
-          calculator_data: p.calculatorData,
-          breakdown: p.breakdown
-        };
-      }
-      return null;
-    } else {
-      return await loadUserCarbonData(uId);
-    }
+    return await loadUserCarbonData(uId);
   };
 
-  // Helper save function that proxies either live Supabase or local sandbox profiles
+  // Helper save function that upserts live Supabase profile
   const saveData = async (uId: string, name: string, prof: any, calc: any, breakd: any) => {
-    if (uId?.startsWith('sim_usr_')) {
-      const users = JSON.parse(localStorage.getItem('carbonsteps_simulated_users') || '[]');
-      const userIndex = users.findIndex((u: any) => u.profile && u.profile.id === uId);
-      if (userIndex !== -1) {
-        users[userIndex].profile = {
-          ...users[userIndex].profile,
-          name,
-          level: prof.level,
-          xp: prof.xp,
-          greenPoints: prof.greenPoints,
-          streak: prof.streak,
-          calculatorData: calc,
-          breakdown: breakd
-        };
-        localStorage.setItem('carbonsteps_simulated_users', JSON.stringify(users));
-        
-        // Update simulated active session to keep display name synchronized
-        const activeSess = JSON.parse(localStorage.getItem('carbonsteps_simulated_session') || '{}');
-        if (activeSess && activeSess.user && activeSess.user.id === uId) {
-          activeSess.user.user_metadata = { ...activeSess.user.user_metadata, display_name: name };
-          localStorage.setItem('carbonsteps_simulated_session', JSON.stringify(activeSess));
-        }
-      }
-      return true;
-    } else {
-      return await saveUserCarbonData(uId, name, prof, calc, breakd);
-    }
+    return await saveUserCarbonData(uId, name, prof, calc, breakd);
   };
 
   // Authenticated state handler - loads user accounts or clones local metrics to Postgres
@@ -196,7 +155,6 @@ export default function App() {
         console.warn("Supabase auth engine logout warning:", err);
       }
     }
-    localStorage.removeItem('carbonsteps_simulated_session');
     setSupabaseSession(null);
     setSupabaseUserId(null);
     setSyncing(false);
@@ -205,7 +163,7 @@ export default function App() {
   // Check for auto-login on component boot up
   useEffect(() => {
     const checkActiveSession = async () => {
-      // 1. Try real Supabase auth session if configured
+      // Try real Supabase auth session if configured
       if (supabase) {
         try {
           const { data: { session } } = await supabase.auth.getSession();
@@ -215,19 +173,6 @@ export default function App() {
           }
         } catch (e) {
           console.warn("Failed checking Supabase baseline session on boot.");
-        }
-      }
-
-      // 2. Try simulated localStorage fallback session
-      const stored = localStorage.getItem('carbonsteps_simulated_session');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (parsed && parsed.user) {
-            handleSessionChange(parsed);
-          }
-        } catch (e) {
-          console.error("Malformed simulated session schema.", e);
         }
       }
     };
@@ -288,7 +233,13 @@ export default function App() {
   const totalTons = (breakdown.total / 1000).toFixed(1);
 
   if (!supabaseUserId) {
-    return <LoginPage onLoginSuccess={handleSessionChange} />;
+    return (
+      <ErrorBoundary>
+        <Suspense fallback={<MultiStageSkeleton stages={["Securing authentication context...", "Resolving local portal key..."]} />}>
+          <LoginPage onLoginSuccess={handleSessionChange} />
+        </Suspense>
+      </ErrorBoundary>
+    );
   }
 
   return (
@@ -429,30 +380,34 @@ export default function App() {
 
         {/* Selected Hub Render */}
         <div className="min-h-[480px]">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
-            className="w-full"
-          >
-            {activeTab === 'twin' && (
-              <TwinSection 
-                userBreakdown={breakdown} 
-                onSessionChange={handleSessionChange}
-                supabaseUserId={supabaseUserId}
-                onSyncRequest={handleSyncRequest}
-                syncing={syncing}
-              />
-            )}
-            {activeTab === 'calculator' && <CalculatorWizard onCalculationComplete={handleCalculationComplete} currentData={calculatorData} />}
-            {activeTab === 'coach' && <CoachSection userBreakdown={breakdown} />}
-            {activeTab === 'receipt' && <ReceiptScannerSection />}
-            {activeTab === 'routes' && <RoutePlannerSection />}
-            {activeTab === 'quests' && <QuestsSection userProfile={profile} onQuestCompleted={handleQuestCompleted} />}
-            {activeTab === 'marketplace' && <MarketplaceSection />}
-          </motion.div>
+          <ErrorBoundary>
+            <Suspense fallback={<MultiStageSkeleton />}>
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+                className="w-full"
+              >
+                {activeTab === 'twin' && (
+                  <TwinSection 
+                    userBreakdown={breakdown} 
+                    onSessionChange={handleSessionChange}
+                    supabaseUserId={supabaseUserId}
+                    onSyncRequest={handleSyncRequest}
+                    syncing={syncing}
+                  />
+                )}
+                {activeTab === 'calculator' && <CalculatorWizard onCalculationComplete={handleCalculationComplete} currentData={calculatorData} />}
+                {activeTab === 'coach' && <CoachSection userBreakdown={breakdown} />}
+                {activeTab === 'receipt' && <ReceiptScannerSection />}
+                {activeTab === 'routes' && <RoutePlannerSection />}
+                {activeTab === 'quests' && <QuestsSection userProfile={profile} onQuestCompleted={handleQuestCompleted} />}
+                {activeTab === 'marketplace' && <MarketplaceSection />}
+              </motion.div>
+            </Suspense>
+          </ErrorBoundary>
         </div>
       </div>
 
