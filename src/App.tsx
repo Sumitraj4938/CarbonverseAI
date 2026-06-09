@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { 
   Sparkles, Leaf, Activity, Star, Users, Navigation, 
   Camera, ShoppingBag, ShieldAlert, Cpu, Heart, AlertCircle, LogIn, LogOut, Cloud
@@ -387,22 +388,31 @@ export default function App() {
         </div>
 
         {/* Selected Hub Render */}
-        <div className="min-h-[480px] transition-all duration-300">
-          {activeTab === 'twin' && (
-            <TwinSection 
-              userBreakdown={breakdown} 
-              onSessionChange={handleSessionChange}
-              supabaseUserId={supabaseUserId}
-              onSyncRequest={handleSyncRequest}
-              syncing={syncing}
-            />
-          )}
-          {activeTab === 'calculator' && <CalculatorWizard onCalculationComplete={handleCalculationComplete} currentData={calculatorData} />}
-          {activeTab === 'coach' && <CoachSection userBreakdown={breakdown} />}
-          {activeTab === 'receipt' && <ReceiptScannerSection />}
-          {activeTab === 'routes' && <RoutePlannerSection />}
-          {activeTab === 'quests' && <QuestsSection userProfile={profile} onQuestCompleted={handleQuestCompleted} />}
-          {activeTab === 'marketplace' && <MarketplaceSection />}
+        <div className="min-h-[480px]">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+            className="w-full"
+          >
+            {activeTab === 'twin' && (
+              <TwinSection 
+                userBreakdown={breakdown} 
+                onSessionChange={handleSessionChange}
+                supabaseUserId={supabaseUserId}
+                onSyncRequest={handleSyncRequest}
+                syncing={syncing}
+              />
+            )}
+            {activeTab === 'calculator' && <CalculatorWizard onCalculationComplete={handleCalculationComplete} currentData={calculatorData} />}
+            {activeTab === 'coach' && <CoachSection userBreakdown={breakdown} />}
+            {activeTab === 'receipt' && <ReceiptScannerSection />}
+            {activeTab === 'routes' && <RoutePlannerSection />}
+            {activeTab === 'quests' && <QuestsSection userProfile={profile} onQuestCompleted={handleQuestCompleted} />}
+            {activeTab === 'marketplace' && <MarketplaceSection />}
+          </motion.div>
         </div>
       </div>
 

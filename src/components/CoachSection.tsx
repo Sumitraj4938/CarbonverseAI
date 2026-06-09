@@ -4,6 +4,7 @@ import {
   HelpCircle, ThumbsUp, Leaf, DollarSign
 } from 'lucide-react';
 import { Message, EmissionBreakdown } from '../types';
+import MultiStageSkeleton from './MultiStageSkeleton';
 
 interface CoachSectionProps {
   userBreakdown?: EmissionBreakdown;
@@ -243,13 +244,16 @@ export default function CoachSection({ userBreakdown }: CoachSectionProps) {
             );
           })}
           {loading && (
-            <div className="flex gap-3 max-w-[85%]">
-              <div className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 mt-1">
-                <Sparkles className="w-3.5 h-3.5 text-carbon-primary animate-pulse" />
-              </div>
-              <div className="bg-white/5 border border-white/5 p-4 rounded-xl text-sm text-slate-500 animate-pulse flex items-center gap-2">
-                Analyzing carbon ledger...
-              </div>
+            <div className="max-w-[90%] md:max-w-[70%]">
+              <MultiStageSkeleton 
+                stages={[
+                  "Consulting climate twin profile...",
+                  "Evaluating scope 3 grid matrices...",
+                  "Computing carbon mitigation paybacks...",
+                  "Formulating personalized green habit suggestions..."
+                ]}
+                durationMs={2000}
+              />
             </div>
           )}
           <div ref={bottomRef} />

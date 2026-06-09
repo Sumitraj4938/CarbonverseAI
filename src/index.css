@@ -7,19 +7,19 @@
   --font-display: "Outfit", sans-serif;
   --font-mono: "Fira Code", monospace;
   
-  --color-carbon-primary: #00E676;
-  --color-carbon-secondary: #00BFA5;
-  --color-carbon-dark: #0B1020;
+  --color-carbon-primary: #10B981;
+  --color-carbon-secondary: #059669;
+  --color-carbon-dark: #0B130E;
   --color-carbon-accent: #7C4DFF;
-  --color-carbon-card: rgba(255, 255, 255, 0.06);
-  --color-carbon-card-hover: rgba(255, 255, 255, 0.12);
-  --color-carbon-border: rgba(255, 255, 255, 0.1);
-  --color-carbon-border-active: rgba(0, 230, 118, 0.3);
+  --color-carbon-card: rgba(255, 255, 255, 0.05);
+  --color-carbon-card-hover: rgba(255, 255, 255, 0.10);
+  --color-carbon-border: rgba(16, 185, 129, 0.15);
+  --color-carbon-border-active: rgba(16, 185, 129, 0.35);
 }
 
 @layer base {
   body {
-    background-color: #0b1020;
+    background-color: #0B130E;
     color: #ffffff;
     font-family: var(--font-sans);
     overflow-x: hidden;
@@ -80,18 +80,18 @@
   top: 0;
   left: 0;
   z-index: 0;
-  background: radial-gradient(circle at 80% 20%, rgba(0, 230, 118, 0.15) 0%, transparent 50%),
-              radial-gradient(circle at 20% 80%, rgba(124, 77, 255, 0.15) 0%, transparent 50%);
+  background: radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.12) 0%, transparent 50%),
+              radial-gradient(circle at 20% 80%, rgba(124, 77, 255, 0.12) 0%, transparent 50%);
   filter: blur(100px);
   pointer-events: none;
 }
 
 .glow-green {
-  background: radial-gradient(circle, #00E676 0%, transparent 70%);
+  background: radial-gradient(circle, #10B981 0%, transparent 70%);
 }
 
 .glow-teal {
-  background: radial-gradient(circle, #00BFA5 0%, transparent 70%);
+  background: radial-gradient(circle, #059669 0%, transparent 70%);
 }
 
 .glow-purple {
@@ -100,11 +100,11 @@
 
 /* Neon Glow classes */
 .text-glow-green {
-  text-shadow: 0 0 10px rgba(0, 230, 118, 0.5);
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
 }
 
 .text-glow-secondary {
-  text-shadow: 0 0 10px rgba(0, 191, 165, 0.5);
+  text-shadow: 0 0 10px rgba(5, 150, 105, 0.5);
 }
 
 .border-glow-accent {

@@ -3,6 +3,7 @@ import {
   Sparkles, Camera, Upload, AlertCircle, RefreshCw, 
   Check, ArrowRight, ShieldAlert, ShoppingBag, HardDriveUpload
 } from 'lucide-react';
+import MultiStageSkeleton from './MultiStageSkeleton';
 
 interface ScannedItem {
   name: string;
@@ -169,7 +170,19 @@ export default function ReceiptScannerSection() {
 
       {/* Scanned breakdown right panel */}
       <div className="lg:col-span-3 glass-panel p-6 rounded-2xl flex flex-col justify-between h-[510px]">
-        {scannedResult ? (
+        {loading ? (
+          <div className="flex-1 flex flex-col justify-center text-center p-2">
+            <MultiStageSkeleton 
+              stages={[
+                "Extracting transaction line items...",
+                "Identifying supplier carbon weight offsets...",
+                "Evaluating alternative ecological products...",
+                "Structuring environmental auditor payload..."
+              ]}
+              durationMs={1800}
+            />
+          </div>
+        ) : scannedResult ? (
           <div className="space-y-4 overflow-y-auto flex-1 pr-1">
             <div className="flex justify-between items-center bg-white/5 border border-white/5 rounded-xl p-4">
               <div>
