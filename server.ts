@@ -211,13 +211,52 @@ app.post("/api/quests/complete", (req, res) => {
   });
 });
 
+function isClimaticTopic(text: string): boolean {
+  const normalized = text.toLowerCase().trim();
+  
+  // Allow greetings and standard app-relative help prompts
+  const greetings = [
+    "hello", "hi", "hey", "who are you", "what can you do", "help", "how does this work", 
+    "options", "questions", "guide", "info", "explain", "about you", "get started", "welcome"
+  ];
+  if (greetings.some(g => normalized === g || normalized.startsWith(g + " ") || normalized.endsWith(" " + g))) {
+    return true;
+  }
+
+  // Core thematic tokens matching environmental and sustainability domains
+  const keywords = [
+    "carbon", "co2", "footprint", "climate", "emission", "greenhouse", "transit", "train", "flight", 
+    "eco", "vegan", "veget", "meat", "diet", "recycle", "electricity", "energy", "solar", "wind", 
+    "power", "waste", "water", "sustain", "green", "earth", "plant", "environmental", "tree", "forest", 
+    "commute", "car", "fuel", "gas", "hybrid", "electric", "saving", "mitigat", "offset", "planet", 
+    "warm", "global", "temperature", "coal", "fossil", "plastic", "appliance", "shower", "compost",
+    "led", "bulb", "consumption", "shopping", "transport", "mile", "kwh", "habit", "eco-friendly"
+  ];
+
+  return keywords.some(keyword => normalized.includes(keyword));
+}
+
 // AI Climate Coach
 app.post("/api/gemini/chat", async (req, res) => {
   const { messages, userContext } = req.body;
   const lastUserMessage = messages[messages.length - 1]?.content || "";
 
+  // Topic validation rule
+  if (!isClimaticTopic(lastUserMessage)) {
+    return res.json({
+      role: "model",
+      content: "As your dedicated AI Climate Advisor, my expertise is strictly configured for questions about carbon footprints, environmental sustainability, climate change, greenhouse gas calculations, energy efficiency, and eco-friendly habit changes. Please request guidance within these sustainability fields!",
+      timestamp: new Date().toISOString()
+    });
+  }
+
   const systemPrompt = `You are the Expert AI Climate Coach of "CarbonVerse AI" platform, a living digital carbon supervisor, carbon accountant, and behavior modification counselor.
 Your character is analytical yet motivating. Use strict scientifically accurate sustainability insights in accordance with the GHG Protocol.
+
+**CRITICAL TOPIC BOUNDARY POLICY**:
+You are strictly restricted to processing carbon footprint audit, energy optimization, fuel emissions, climate mitigation, environmental footprint, ecology, organic agriculture/diet, and climate change questions. 
+If the user's message is not directly related to these sustainable topics, you MUST politely reject and refuse the answer. Ask them to stick to sustainability topics.
+
 At the end of your response, you MUST estimate:
 1. Expected CO2 savings in kg if the user adopts the specific habit discussed.
 2. Approximate financial (money) savings in USD per year.

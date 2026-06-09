@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, Award, Play, Globe, Shield, Activity, 
-  ArrowRight, Users, Flame, ExternalLink, Leaf
+  ArrowRight, Users, Flame, ExternalLink, Leaf, FolderOpen, Cloud, User
 } from 'lucide-react';
 import { LeaderboardUser } from '../types';
 
 interface LandingPageProps {
   onStart: () => void;
   leaderboard: LeaderboardUser[];
+  onOpenExtraDrawer?: () => void;
+  onOpenCloudIdentity?: () => void;
+  userEmail?: string | null;
 }
 
-export default function LandingPage({ onStart, leaderboard }: LandingPageProps) {
+export default function LandingPage({ onStart, leaderboard, onOpenExtraDrawer, onOpenCloudIdentity, userEmail }: LandingPageProps) {
   // Dynamic Global Carbon emissions added since loading
   const [globalCO2, setGlobalCO2] = useState(145020.4);
 
@@ -26,6 +29,48 @@ export default function LandingPage({ onStart, leaderboard }: LandingPageProps) 
     <div className="relative min-h-screen overflow-hidden">
       {/* Decorative aurora glow layers matching the design theme */}
       <div className="aurora" />
+
+      {/* Top Header Controls bar */}
+      <div className="absolute left-6 right-6 top-6 z-[60] flex justify-between items-center">
+        {onOpenExtraDrawer && (
+          <button
+            id="landing-explorer-btn"
+            onClick={onOpenExtraDrawer}
+            className="flex items-center gap-2 px-4 py-2.5 bg-slate-900/90 hover:bg-slate-950 border border-emerald-500/40 hover:border-emerald-400 rounded-xl text-emerald-400 font-mono text-xs font-bold shadow-2xl shadow-emerald-500/10 cursor-pointer transition-all hover:scale-105 active:scale-95 group"
+            title="Open System Explorer Folders"
+          >
+            <FolderOpen className="w-4 h-4 text-emerald-400 group-hover:rotate-12 transition-transform" />
+            <span className="hidden sm:inline">SYSTEM EXPLORER</span>
+            <span className="sm:hidden">EXPLORER</span>
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+          </button>
+        )}
+
+        {onOpenCloudIdentity && (
+          <button
+            id="landing-cloud-auth-btn"
+            onClick={onOpenCloudIdentity}
+            className="flex items-center gap-2 px-4 py-2.5 bg-slate-900/90 hover:bg-slate-950 border border-indigo-500/40 hover:border-indigo-400 rounded-xl text-indigo-300 font-mono text-xs font-bold shadow-2xl shadow-indigo-500/10 cursor-pointer transition-all hover:scale-105 active:scale-95 group"
+            title="Access Cloud Authentication Account"
+          >
+            <Cloud className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
+            {userEmail ? (
+              <span className="text-emerald-400 max-w-[120px] sm:max-w-none truncate">
+                SYNCED: {userEmail.split('@')[0]}
+              </span>
+            ) : (
+              <span>CREATE ACCOUNT / LOGIN</span>
+            )}
+            <span className="relative flex h-2 w-2">
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${userEmail ? 'bg-emerald-400' : 'bg-indigo-400'}`}></span>
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${userEmail ? 'bg-emerald-500' : 'bg-indigo-500'}`}></span>
+            </span>
+          </button>
+        )}
+      </div>
 
       {/* Hero Section */}
       <section className="relative z-10 pt-20 pb-16 px-4 max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12">

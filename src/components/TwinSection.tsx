@@ -4,12 +4,23 @@ import {
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { EmissionBreakdown } from '../types';
+import DailyCarbonGoal from './DailyCarbonGoal';
 
 interface TwinSectionProps {
   userBreakdown?: EmissionBreakdown;
+  onSessionChange: (session: any) => void;
+  supabaseUserId: string | null;
+  onSyncRequest: () => void;
+  syncing: boolean;
 }
 
-export default function TwinSection({ userBreakdown }: TwinSectionProps) {
+export default function TwinSection({ 
+  userBreakdown,
+  onSessionChange,
+  supabaseUserId,
+  onSyncRequest,
+  syncing
+}: TwinSectionProps) {
   // Configured mitigations in simulator
   const [switches, setSwitches] = useState({
     activeTransit: false, // saves ~150kg/month
@@ -18,16 +29,6 @@ export default function TwinSection({ userBreakdown }: TwinSectionProps) {
     dryLineLaundry: false, // saves ~40kg/month
     zeroShoppingWaste: false // saves ~60kg/month
   });
-
-  // Daily goal tracker custom interactive actions
-  const [dailyActions, setDailyActions] = useState({
-    tookTrain: false,       // saves 4.5 kg CO2
-    veggieDiet: false,      // saves 3.0 kg CO2
-    shortShower: false,     // saves 1.2 kg CO2
-    unpluggedElectronics: false // saves 0.8 kg CO2
-  });
-
-  const [dailyTarget, setDailyTarget] = useState(12.0); // Daily emission target in kg CO2
 
   const baseAnnual = userBreakdown ? userBreakdown.total : 4800; // default kg CO2
 
@@ -55,20 +56,6 @@ export default function TwinSection({ userBreakdown }: TwinSectionProps) {
 
   const monthlySavings = calculateSavings();
   const yearlySavings = monthlySavings * 12;
-
-  const baseDaily = Math.round((baseAnnual / 365) * 10) / 10;
-  const simulatedDailySavings = Math.round((monthlySavings / 30) * 10) / 10;
-  
-  // Extra interactive daily actions
-  let extraDailySavings = 0;
-  if (dailyActions.tookTrain) extraDailySavings += 4.5;
-  if (dailyActions.veggieDiet) extraDailySavings += 3.0;
-  if (dailyActions.shortShower) extraDailySavings += 1.2;
-  if (dailyActions.unpluggedElectronics) extraDailySavings += 0.8;
-
-  const finalDailyFootprint = Math.max(1.0, Math.round((baseDaily - simulatedDailySavings - extraDailySavings) * 10) / 10);
-  const goalProgressPercentage = Math.min(100, Math.round((finalDailyFootprint / dailyTarget) * 100));
-  const isWithinBudget = finalDailyFootprint <= dailyTarget;
 
   // Build predictions graph dataset
   const generateChartData = () => {
@@ -158,84 +145,7 @@ export default function TwinSection({ userBreakdown }: TwinSectionProps) {
         )}
 
         {/* Daily Carbon Goal Tracker Component */}
-        <div className="w-full border-t border-slate-900 pt-4 mt-4 text-left">
-          <div className="flex justify-between items-center mb-2.5">
-            <span className="text-xs font-semibold text-white tracking-wide uppercase flex items-center gap-1.5">
-              <Leaf className="w-3.5 h-3.5 text-carbon-primary" />
-              Daily Carbon Goal
-            </span>
-            <div className="flex items-center gap-1">
-              <button 
-                onClick={() => setDailyTarget(prev => Math.max(4, prev - 1))}
-                className="w-5 h-5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center text-xs text-slate-400 cursor-pointer transition-colors"
-                title="Decrease Goal"
-              >
-                -
-              </button>
-              <span className="text-[10px] font-mono text-slate-300 font-bold px-1">{dailyTarget.toFixed(0)} kg</span>
-              <button 
-                onClick={() => setDailyTarget(prev => Math.min(30, prev + 1))}
-                className="w-5 h-5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center text-xs text-slate-400 cursor-pointer transition-colors"
-                title="Increase Goal"
-              >
-                +
-              </button>
-            </div>
-          </div>
-
-          <div className="bg-slate-950/40 border border-slate-900/60 rounded-xl p-3 space-y-3">
-            <div>
-              <div className="flex justify-between items-center text-[11px] mb-1">
-                <span className="text-slate-400">Emission: <span className="font-bold text-white font-mono">{finalDailyFootprint} kg</span></span>
-                <span className={`font-semibold text-[10px] px-1.5 py-0.5 rounded ${isWithinBudget ? 'bg-carbon-primary/10 text-carbon-primary' : 'bg-red-500/10 text-red-400'}`}>
-                  {isWithinBudget ? 'Under Target Budget' : 'Target Exceeded'}
-                </span>
-              </div>
-              <div className="w-full bg-slate-900/80 rounded-full h-2 border border-slate-800 relative overflow-hidden">
-                <div 
-                  className={`h-full rounded-full transition-all duration-500 ${
-                    isWithinBudget ? 'bg-gradient-to-r from-carbon-primary to-emerald-400' : 'bg-gradient-to-r from-red-500 to-red-400'
-                  }`}
-                  style={{ width: `${goalProgressPercentage}%` }}
-                />
-              </div>
-              <div className="flex justify-between text-[9px] text-slate-500 font-mono mt-1">
-                <span>Progress: {goalProgressPercentage}%</span>
-                <span>Goal Target Limit: {dailyTarget} kg</span>
-              </div>
-            </div>
-
-            {/* Micro Toggles for Daily Activities */}
-            <div className="space-y-1.5 pt-1.5 border-t border-slate-900/40">
-              <span className="text-[9px] text-slate-500 uppercase font-mono tracking-wider block">Logged Actions Today:</span>
-              
-              <div className="grid grid-cols-2 gap-1.5">
-                {[
-                  { id: 'tookTrain', label: 'Commute Rail', value: '4.5' },
-                  { id: 'veggieDiet', label: 'Vegan Lunch', value: '3.0' },
-                  { id: 'shortShower', label: '5-min Shower', value: '1.2' },
-                  { id: 'unpluggedElectronics', label: 'Off Standby', value: '0.8' }
-                ].map((act) => (
-                  <button
-                    key={act.id}
-                    onClick={() => setDailyActions(prev => ({
-                      ...prev,
-                      [act.id]: !(prev as any)[act.id]
-                    }))}
-                    className={`px-2 py-1.5 rounded-lg border text-[10px] transition-all text-left flex justify-between items-center ${
-                      (dailyActions as any)[act.id]
-                        ? 'border-carbon-primary/30 bg-carbon-primary/10 text-carbon-primary font-bold'
-                        : 'border-slate-800 bg-slate-900/30 text-slate-400 hover:text-slate-300 hover:bg-slate-900/60'
-                    }`}
-                  >
-                    <span className="truncate">{act.label}</span>
-                    <span className="text-[8px] font-mono opacity-80">-{act.value} kg</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+        <DailyCarbonGoal baseAnnual={baseAnnual} monthlySavings={monthlySavings} />
       </div>
 
       {/* Habits simulator middle panel */}
@@ -301,8 +211,8 @@ export default function TwinSection({ userBreakdown }: TwinSectionProps) {
         </div>
       </div>
 
-      {/* Area chart future predictions right */}
-      <div className="glass-panel p-6 rounded-2xl flex flex-col justify-between">
+      {/* Area chart future predictions right - expanded full layout */}
+      <div className="glass-panel p-6 rounded-2xl flex flex-col justify-between min-h-[420px]">
         <div>
           <h4 className="text-lg font-display font-medium text-white mb-1 flex items-center justify-between">
             <span>Projection Curve (12mo)</span>

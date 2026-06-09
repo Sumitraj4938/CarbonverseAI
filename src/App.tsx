@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, Leaf, Activity, Star, Users, Navigation, 
-  Camera, ShoppingBag, ShieldAlert, Cpu, Heart, AlertCircle, LogIn, LogOut
+  Camera, ShoppingBag, ShieldAlert, Cpu, Heart, AlertCircle, LogIn, LogOut, Cloud
 } from 'lucide-react';
 import LandingPage from './components/LandingPage';
 import CalculatorWizard from './components/CalculatorWizard';
@@ -11,7 +11,9 @@ import ReceiptScannerSection from './components/ReceiptScannerSection';
 import RoutePlannerSection from './components/RoutePlannerSection';
 import QuestsSection from './components/QuestsSection';
 import MarketplaceSection from './components/MarketplaceSection';
+import ExtraControlsDrawer, { FolderID } from './components/ExtraControlsDrawer';
 import { CarbonProfile, CarbonCalculatorData, EmissionBreakdown, LeaderboardUser } from './types';
+import { loadUserCarbonData, saveUserCarbonData } from './lib/supabase';
 
 // Preset leaderboard profiles representing standard cohorts
 const INITIAL_LEADERBOARD: LeaderboardUser[] = [
@@ -57,6 +59,75 @@ export default function App() {
 
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>(INITIAL_LEADERBOARD);
 
+  // Supabase Integration States
+  const [supabaseSession, setSupabaseSession] = useState<any>(null);
+  const [supabaseUserId, setSupabaseUserId] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [isExtraDrawerOpen, setIsExtraDrawerOpen] = useState(false);
+  const [drawerDefaultFolder, setDrawerDefaultFolder] = useState<FolderID>('root');
+
+  // Authenticated state handler - loads user accounts or clones local metrics to Postgres
+  const handleSessionChange = async (session: any) => {
+    setSupabaseSession(session);
+    if (session?.user) {
+      const uId = session.user.id;
+      setSupabaseUserId(uId);
+      
+      setSyncing(true);
+      const cloudData = await loadUserCarbonData(uId);
+      if (cloudData) {
+        if (cloudData.name) {
+          setProfile(prev => ({
+            ...prev,
+            id: cloudData.id,
+            name: cloudData.name,
+            level: cloudData.level as any,
+            xp: cloudData.xp,
+            greenPoints: cloudData.green_points,
+            streak: cloudData.streak
+          }));
+        }
+        if (cloudData.calculator_data) {
+          setCalculatorData(cloudData.calculator_data);
+        }
+        if (cloudData.breakdown) {
+          setBreakdown(cloudData.breakdown);
+          
+          setLeaderboard(prev => prev.map(u => 
+            u.isCurrentUser 
+              ? { 
+                  ...u, 
+                  name: `${cloudData.name || 'You'} (Cloud)`,
+                  score: cloudData.breakdown!.carbonScore, 
+                  emissions: parseFloat((cloudData.breakdown!.total / 1000).toFixed(1)), 
+                  level: cloudData.level 
+                } 
+              : u
+          ).sort((a,b) => b.score - a.score).map((item, index) => ({...item, rank: index + 1})));
+        }
+      } else {
+        const displayName = session.user.user_metadata?.display_name || 'Carbon Pioneer';
+        setProfile(prev => ({ ...prev, name: displayName, id: uId }));
+        await saveUserCarbonData(uId, displayName, profile, calculatorData, breakdown);
+      }
+      setSyncing(false);
+    } else {
+      setSupabaseUserId(null);
+      setProfile(prev => ({
+        ...prev,
+        id: "carbon_usr_1",
+        name: "Eco Champion"
+      }));
+    }
+  };
+
+  const handleSyncRequest = async () => {
+    if (!supabaseUserId) return;
+    setSyncing(true);
+    await saveUserCarbonData(supabaseUserId, profile.name, profile, calculatorData, breakdown);
+    setSyncing(false);
+  };
+
   // Synchronize current profile state from backend on mount
   useEffect(() => {
     const fetchBaseline = async () => {
@@ -64,16 +135,18 @@ export default function App() {
         const response = await fetch('/api/carbon/metrics');
         if (response.ok) {
           const result = await response.json();
-          setProfile(result.profile);
-          setCalculatorData(result.calculatorData);
-          setBreakdown(result.breakdown);
+          if (!supabaseUserId) {
+            setProfile(result.profile);
+            setCalculatorData(result.calculatorData);
+            setBreakdown(result.breakdown);
+          }
         }
       } catch (err) {
         console.warn("Express endpoint booting, operating on local model baseline.");
       }
     };
     fetchBaseline();
-  }, []);
+  }, [supabaseUserId]);
 
   // Update cumulative parameters when local calculator finishes computing
   const handleCalculationComplete = (data: { breakdown: EmissionBreakdown; calculatorData: CarbonCalculatorData }) => {
@@ -101,6 +174,11 @@ export default function App() {
         : u
     ).sort((a,b) => b.score - a.score).map((item, index) => ({...item, rank: index + 1})));
 
+    // Auto sync to database if user is premium connected
+    if (supabaseUserId) {
+      saveUserCarbonData(supabaseUserId, updatedProfile.name, updatedProfile, data.calculatorData, data.breakdown);
+    }
+
     setActiveTab('twin'); // transition automatically to see twin avatar update
   };
 
@@ -113,13 +191,45 @@ export default function App() {
         ? { ...u, level: updatedProfile.level } 
         : u
     ));
+
+    // Auto sync to database if user is premium connected
+    if (supabaseUserId) {
+      saveUserCarbonData(supabaseUserId, updatedProfile.name, updatedProfile, calculatorData, breakdown);
+    }
   };
 
   // Convert total to tons
   const totalTons = (breakdown.total / 1000).toFixed(1);
 
   if (!inPortal) {
-    return <LandingPage onStart={() => setInPortal(true)} leaderboard={leaderboard} />;
+    return (
+      <div className="min-h-screen bg-carbon-dark text-white relative">
+        <LandingPage 
+          onStart={() => setInPortal(true)} 
+          leaderboard={leaderboard} 
+          onOpenExtraDrawer={() => {
+            setDrawerDefaultFolder('root');
+            setIsExtraDrawerOpen(true);
+          }} 
+          onOpenCloudIdentity={() => {
+            setDrawerDefaultFolder('cloud_sync');
+            setIsExtraDrawerOpen(true);
+          }}
+          userEmail={supabaseSession?.user?.email || null}
+        />
+        {/* Extra Controls Drawer */}
+        <ExtraControlsDrawer
+          isOpen={isExtraDrawerOpen}
+          onClose={() => setIsExtraDrawerOpen(false)}
+          leaderboard={leaderboard}
+          onSessionChange={handleSessionChange}
+          supabaseUserId={supabaseUserId}
+          onSyncRequest={handleSyncRequest}
+          syncing={syncing}
+          defaultFolder={drawerDefaultFolder}
+        />
+      </div>
+    );
   }
 
   return (
@@ -127,16 +237,76 @@ export default function App() {
       {/* Visual background aurora elements matching design theme */}
       <div className="aurora" />
 
+      {/* Floating Left Side Expert Workspace Handle */}
+      <div className="fixed left-0 top-[40%] z-[45] transform -translate-y-1/2 hidden md:block">
+        <button
+          onClick={() => setIsExtraDrawerOpen(true)}
+          className="bg-slate-900/95 hover:bg-slate-950 text-white border-y border-r border-[#00E676]/30 flex flex-col items-center gap-2 pl-3 pr-3.5 py-4 rounded-r-2xl shadow-xl shadow-slate-950/50 hover:border-[#00E676]/80 transition-all cursor-pointer group active:scale-95 text-[10px] font-mono font-bold uppercase tracking-widest"
+          title="Open Expert Workspace & Leaderboard"
+        >
+          <Cpu className="w-4 h-4 text-[#00E676] group-hover:rotate-12 transition-transform" />
+          <div className="h-28 flex items-center justify-center">
+            <span style={{ writingMode: 'vertical-lr', textOrientation: 'mixed' }} className="text-slate-300 group-hover:text-white transition-colors">
+              EXPERT WORKSPACE
+            </span>
+          </div>
+          <div className="relative flex h-2 w-2 mt-1">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </div>
+        </button>
+      </div>
+
+      {/* Mobile-Friendly Floating Button representation as well */}
+      <div className="fixed bottom-4 left-4 z-[45] md:hidden">
+        <button
+          onClick={() => setIsExtraDrawerOpen(true)}
+          className="bg-slate-900 hover:bg-slate-950 text-white border border-[#00E676]/30 px-3.5 py-2.5 rounded-full shadow-2xl flex items-center gap-2 text-xs font-mono font-bold tracking-wider"
+        >
+          <Cpu className="w-4 h-4 text-[#00E676]" />
+          <span>EXPERT LAB</span>
+        </button>
+      </div>
+
+      {/* Extra Controls Drawer */}
+      <ExtraControlsDrawer
+        isOpen={isExtraDrawerOpen}
+        onClose={() => setIsExtraDrawerOpen(false)}
+        leaderboard={leaderboard}
+        onSessionChange={handleSessionChange}
+        supabaseUserId={supabaseUserId}
+        onSyncRequest={handleSyncRequest}
+        syncing={syncing}
+        defaultFolder={drawerDefaultFolder}
+      />
+
       {/* Main Header bar */}
       <header className="border-b border-slate-900 bg-slate-950/45 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-carbon-primary to-carbon-secondary flex items-center justify-center shadow-lg shadow-carbon-primary/10 select-none">
-              <Leaf className="w-5 h-5 text-carbon-dark" />
-            </div>
-            <div>
-              <h1 className="text-xl font-display font-medium text-white tracking-tight">CarbonVerse <span className="text-carbon-primary text-glow-green">AI</span></h1>
-              <span className="text-[10px] text-slate-500 font-mono block">GHG ACCREDITED ENVIRONMENTAL SCIENCE INDEX</span>
+          <div className="flex items-center gap-4 w-full sm:w-auto">
+            {/* Top Left Menu Button to open Folders Workspace */}
+            <button
+              id="top-left-system-btn"
+              onClick={() => setIsExtraDrawerOpen(true)}
+              className="px-3.5 py-2 border border-emerald-500/30 hover:border-emerald-400 bg-slate-900/80 hover:bg-slate-950 rounded-xl text-emerald-400 flex items-center gap-2 cursor-pointer transition-all hover:scale-105 active:scale-95 group font-mono text-[11px] font-bold"
+              title="Open System Explorer & Folders"
+            >
+              <Cpu className="w-4 h-4 text-emerald-400 group-hover:rotate-12 transition-transform" />
+              <span>EXPLORE</span>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+            </button>
+
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-carbon-primary to-carbon-secondary flex items-center justify-center shadow-lg shadow-carbon-primary/10 select-none">
+                <Leaf className="w-5 h-5 text-carbon-dark" />
+              </div>
+              <div>
+                <h1 className="text-xl font-display font-medium text-white tracking-tight">CarbonVerse <span className="text-carbon-primary text-glow-green">AI</span></h1>
+                <span className="text-[10px] text-slate-500 font-mono block">GHG ACCREDITED ENVIRONMENTAL SCIENCE INDEX</span>
+              </div>
             </div>
           </div>
 
@@ -157,9 +327,42 @@ export default function App() {
               </div>
             </div>
 
+            {/* Cloud Storage Account Connector button */}
+            <button
+              id="top-header-cloud-btn"
+              onClick={() => {
+                setDrawerDefaultFolder('cloud_sync');
+                setIsExtraDrawerOpen(true);
+              }}
+              className={`flex items-center gap-2 px-3.5 py-1.5 border rounded-lg font-medium transition-all cursor-pointer ${
+                supabaseUserId 
+                  ? 'border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/25 text-emerald-400' 
+                  : 'border-indigo-500/30 bg-indigo-500/15 hover:bg-indigo-500/30 text-indigo-300 shadow-lg shadow-indigo-500/5 animate-pulse'
+              }`}
+            >
+              <Cloud className="w-3.5 h-3.5" />
+              {supabaseUserId ? (
+                <span className="hidden sm:inline">Synced Profile</span>
+              ) : (
+                <span className="hidden sm:inline">Connect Cloud DB</span>
+              )}
+            </button>
+
+            <button
+              id="top-header-workspace-btn"
+              onClick={() => {
+                setDrawerDefaultFolder('root');
+                setIsExtraDrawerOpen(true);
+              }}
+              className="flex items-center gap-2 px-3.5 py-1.5 border border-slate-800 bg-white/5 hover:bg-white/10 rounded-lg text-slate-300 font-medium transition-all cursor-pointer"
+            >
+              <Cpu className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">System Explorer</span>
+            </button>
+
             <button
               onClick={() => setInPortal(false)}
-              className="flex items-center gap-2 px-3.5 py-1.5 border border-slate-800 bg-white/5 hover:bg-white/10 rounded-lg text-slate-300 font-medium transition-all"
+              className="flex items-center gap-2 px-3.5 py-1.5 border border-slate-800 bg-white/5 hover:bg-white/10 rounded-lg text-slate-300 font-medium transition-all cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               Exit Portal
@@ -201,7 +404,15 @@ export default function App() {
 
         {/* Selected Hub Render */}
         <div className="min-h-[480px] transition-all duration-300">
-          {activeTab === 'twin' && <TwinSection userBreakdown={breakdown} />}
+          {activeTab === 'twin' && (
+            <TwinSection 
+              userBreakdown={breakdown} 
+              onSessionChange={handleSessionChange}
+              supabaseUserId={supabaseUserId}
+              onSyncRequest={handleSyncRequest}
+              syncing={syncing}
+            />
+          )}
           {activeTab === 'calculator' && <CalculatorWizard onCalculationComplete={handleCalculationComplete} currentData={calculatorData} />}
           {activeTab === 'coach' && <CoachSection userBreakdown={breakdown} />}
           {activeTab === 'receipt' && <ReceiptScannerSection />}

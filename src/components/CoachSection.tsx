@@ -184,6 +184,14 @@ export default function CoachSection({ userBreakdown }: CoachSectionProps) {
           </div>
         </div>
 
+        {/* Dedicated Strict Carbon Topic Policy banner */}
+        <div className="px-5 py-2 bg-emerald-950/30 border-b border-emerald-900/40 flex items-center gap-2">
+          <Leaf className="w-3.5 h-3.5 text-carbon-primary animate-pulse flex-shrink-0" />
+          <p className="text-[10px] text-emerald-400 font-medium">
+            <span className="font-bold uppercase tracking-wider font-mono">Strict Carbon Domain Protection Active:</span> Ask any questions about carbon footprint mitigation, sustainability, green habits, or climate science. Irrelevant domains are filtered out.
+          </p>
+        </div>
+
         {/* Messages list */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {messages.map((m) => {
