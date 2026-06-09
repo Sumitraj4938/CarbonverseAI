@@ -16,7 +16,8 @@ import ExtraControlsDrawer from './components/ExtraControlsDrawer';
 import Logo from './components/Logo';
 import LoginLogo from './components/LoginLogo';
 import { CarbonProfile, CarbonCalculatorData, EmissionBreakdown, LeaderboardUser } from './types';
-import { loadUserCarbonData, saveUserCarbonData } from './lib/supabase';
+import { loadUserCarbonData, saveUserCarbonData, supabase } from './lib/supabase';
+import LoginPage from './components/LoginPage';
 
 // Preset leaderboard profiles representing standard cohorts
 const INITIAL_LEADERBOARD: LeaderboardUser[] = [
@@ -68,6 +69,61 @@ export default function App() {
   const [syncing, setSyncing] = useState(false);
   const [isExtraDrawerOpen, setIsExtraDrawerOpen] = useState(false);
 
+  // Helper load function that proxies either live Supabase or local sandbox profiles
+  const loadData = async (uId: string) => {
+    if (uId?.startsWith('sim_usr_')) {
+      const users = JSON.parse(localStorage.getItem('carbonsteps_simulated_users') || '[]');
+      const userObj = users.find((u: any) => u.profile && u.profile.id === uId);
+      if (userObj && userObj.profile) {
+        const p = userObj.profile;
+        return {
+          id: p.id,
+          name: p.name,
+          level: p.level,
+          xp: p.xp,
+          green_points: p.greenPoints,
+          streak: p.streak,
+          calculator_data: p.calculatorData,
+          breakdown: p.breakdown
+        };
+      }
+      return null;
+    } else {
+      return await loadUserCarbonData(uId);
+    }
+  };
+
+  // Helper save function that proxies either live Supabase or local sandbox profiles
+  const saveData = async (uId: string, name: string, prof: any, calc: any, breakd: any) => {
+    if (uId?.startsWith('sim_usr_')) {
+      const users = JSON.parse(localStorage.getItem('carbonsteps_simulated_users') || '[]');
+      const userIndex = users.findIndex((u: any) => u.profile && u.profile.id === uId);
+      if (userIndex !== -1) {
+        users[userIndex].profile = {
+          ...users[userIndex].profile,
+          name,
+          level: prof.level,
+          xp: prof.xp,
+          greenPoints: prof.greenPoints,
+          streak: prof.streak,
+          calculatorData: calc,
+          breakdown: breakd
+        };
+        localStorage.setItem('carbonsteps_simulated_users', JSON.stringify(users));
+        
+        // Update simulated active session to keep display name synchronized
+        const activeSess = JSON.parse(localStorage.getItem('carbonsteps_simulated_session') || '{}');
+        if (activeSess && activeSess.user && activeSess.user.id === uId) {
+          activeSess.user.user_metadata = { ...activeSess.user.user_metadata, display_name: name };
+          localStorage.setItem('carbonsteps_simulated_session', JSON.stringify(activeSess));
+        }
+      }
+      return true;
+    } else {
+      return await saveUserCarbonData(uId, name, prof, calc, breakd);
+    }
+  };
+
   // Authenticated state handler - loads user accounts or clones local metrics to Postgres
   const handleSessionChange = async (session: any) => {
     setSupabaseSession(session);
@@ -76,7 +132,7 @@ export default function App() {
       setSupabaseUserId(uId);
       
       setSyncing(true);
-      const cloudData = await loadUserCarbonData(uId);
+      const cloudData = await loadData(uId);
       if (cloudData) {
         if (cloudData.name) {
           setProfile(prev => ({
@@ -99,7 +155,7 @@ export default function App() {
             u.isCurrentUser 
               ? { 
                   ...u, 
-                  name: `${cloudData.name || 'You'} (Cloud)`,
+                  name: `${cloudData.name || 'You'}`,
                   score: cloudData.breakdown!.carbonScore, 
                   emissions: parseFloat((cloudData.breakdown!.total / 1000).toFixed(1)), 
                   level: cloudData.level 
@@ -110,7 +166,7 @@ export default function App() {
       } else {
         const displayName = session.user.user_metadata?.display_name || 'Carbon Pioneer';
         setProfile(prev => ({ ...prev, name: displayName, id: uId }));
-        await saveUserCarbonData(uId, displayName, profile, calculatorData, breakdown);
+        await saveData(uId, displayName, profile, calculatorData, breakdown);
       }
       setSyncing(false);
     } else {
@@ -126,29 +182,56 @@ export default function App() {
   const handleSyncRequest = async () => {
     if (!supabaseUserId) return;
     setSyncing(true);
-    await saveUserCarbonData(supabaseUserId, profile.name, profile, calculatorData, breakdown);
+    await saveData(supabaseUserId, profile.name, profile, calculatorData, breakdown);
     setSyncing(false);
   };
 
-  // Synchronize current profile state from backend on mount
-  useEffect(() => {
-    const fetchBaseline = async () => {
+  const handleSignOut = async () => {
+    setSyncing(true);
+    if (supabase) {
       try {
-        const response = await fetch('/api/carbon/metrics');
-        if (response.ok) {
-          const result = await response.json();
-          if (!supabaseUserId) {
-            setProfile(result.profile);
-            setCalculatorData(result.calculatorData);
-            setBreakdown(result.breakdown);
-          }
-        }
+        await supabase.auth.signOut();
       } catch (err) {
-        console.warn("Express endpoint booting, operating on local model baseline.");
+        console.warn("Supabase auth engine logout warning:", err);
+      }
+    }
+    localStorage.removeItem('carbonsteps_simulated_session');
+    setSupabaseSession(null);
+    setSupabaseUserId(null);
+    setSyncing(false);
+  };
+
+  // Check for auto-login on component boot up
+  useEffect(() => {
+    const checkActiveSession = async () => {
+      // 1. Try real Supabase auth session if configured
+      if (supabase) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            handleSessionChange(session);
+            return;
+          }
+        } catch (e) {
+          console.warn("Failed checking Supabase baseline session on boot.");
+        }
+      }
+
+      // 2. Try simulated localStorage fallback session
+      const stored = localStorage.getItem('carbonsteps_simulated_session');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (parsed && parsed.user) {
+            handleSessionChange(parsed);
+          }
+        } catch (e) {
+          console.error("Malformed simulated session schema.", e);
+        }
       }
     };
-    fetchBaseline();
-  }, [supabaseUserId]);
+    checkActiveSession();
+  }, []);
 
   // Update cumulative parameters when local calculator finishes computing
   const handleCalculationComplete = (data: { breakdown: EmissionBreakdown; calculatorData: CarbonCalculatorData }) => {
@@ -178,7 +261,7 @@ export default function App() {
 
     // Auto sync to database if user is premium connected
     if (supabaseUserId) {
-      saveUserCarbonData(supabaseUserId, updatedProfile.name, updatedProfile, data.calculatorData, data.breakdown);
+      saveData(supabaseUserId, updatedProfile.name, updatedProfile, data.calculatorData, data.breakdown);
     }
 
     setActiveTab('twin'); // transition automatically to see twin avatar update
@@ -196,34 +279,15 @@ export default function App() {
 
     // Auto sync to database if user is premium connected
     if (supabaseUserId) {
-      saveUserCarbonData(supabaseUserId, updatedProfile.name, updatedProfile, calculatorData, breakdown);
+      saveData(supabaseUserId, updatedProfile.name, updatedProfile, calculatorData, breakdown);
     }
   };
 
   // Convert total to tons
   const totalTons = (breakdown.total / 1000).toFixed(1);
 
-  if (!inPortal) {
-    return (
-      <div className="min-h-screen bg-carbon-dark text-white relative">
-        <LandingPage 
-          onStart={() => setInPortal(true)} 
-          leaderboard={leaderboard} 
-          onOpenExtraDrawer={() => setIsExtraDrawerOpen(true)} 
-          onOpenCloudIdentity={() => setIsExtraDrawerOpen(true)}
-          userEmail={supabaseSession?.user?.email || null}
-        />
-        {/* Extra Controls Drawer */}
-        <ExtraControlsDrawer
-          isOpen={isExtraDrawerOpen}
-          onClose={() => setIsExtraDrawerOpen(false)}
-          onSessionChange={handleSessionChange}
-          supabaseUserId={supabaseUserId}
-          onSyncRequest={handleSyncRequest}
-          syncing={syncing}
-        />
-      </div>
-    );
+  if (!supabaseUserId) {
+    return <LoginPage onLoginSuccess={handleSessionChange} />;
   }
 
   return (
@@ -235,10 +299,10 @@ export default function App() {
       <div className="fixed left-0 top-[40%] z-[45] transform -translate-y-1/2 hidden md:block">
         <button
           onClick={() => setIsExtraDrawerOpen(true)}
-          className="bg-slate-900/95 hover:bg-slate-950 text-white border-y border-r border-[#00E676]/30 flex flex-col items-center gap-2 pl-3 pr-3.5 py-4 rounded-r-2xl shadow-xl shadow-slate-950/50 hover:border-[#00E676]/80 transition-all cursor-pointer group active:scale-95 text-[10px] font-mono font-bold uppercase tracking-widest"
+          className="bg-slate-900/95 hover:bg-slate-950 text-white border-y border-r border-[#10B981]/30 flex flex-col items-center gap-2 pl-3 pr-3.5 py-4 rounded-r-2xl shadow-xl shadow-slate-950/50 hover:border-[#10B981]/85 transition-all cursor-pointer group active:scale-95 text-[10px] font-mono font-bold uppercase tracking-widest"
           title="Open Expert Workspace & Leaderboard"
         >
-          <Cpu className="w-4 h-4 text-[#00E676] group-hover:rotate-12 transition-transform" />
+          <Cpu className="w-4 h-4 text-[#10B981] group-hover:rotate-12 transition-transform" />
           <div className="h-28 flex items-center justify-center">
             <span style={{ writingMode: 'vertical-lr', textOrientation: 'mixed' }} className="text-slate-300 group-hover:text-white transition-colors">
               EXPERT WORKSPACE
@@ -255,9 +319,9 @@ export default function App() {
       <div className="fixed bottom-4 left-4 z-[45] md:hidden">
         <button
           onClick={() => setIsExtraDrawerOpen(true)}
-          className="bg-slate-900 hover:bg-slate-950 text-white border border-[#00E676]/30 px-3.5 py-2.5 rounded-full shadow-2xl flex items-center gap-2 text-xs font-mono font-bold tracking-wider"
+          className="bg-slate-900 hover:bg-slate-950 text-white border border-[#10B981]/30 px-3.5 py-2.5 rounded-full shadow-2xl flex items-center gap-2 text-xs font-mono font-bold tracking-wider animate-pulse hover:animate-none"
         >
-          <Cpu className="w-4 h-4 text-[#00E676]" />
+          <Cpu className="w-4 h-4 text-[#10B981]" />
           <span>EXPERT LAB</span>
         </button>
       </div>
@@ -273,84 +337,59 @@ export default function App() {
       />
 
       {/* Main Header bar */}
-      <header className="border-b border-slate-900 bg-slate-950/45 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-4 w-full sm:w-auto">
-            {/* Top Left Menu Button to open Folders Workspace */}
-            <button
-              id="top-left-system-btn"
-              onClick={() => setIsExtraDrawerOpen(true)}
-              className="px-3.5 py-2 border border-emerald-500/30 hover:border-emerald-400 bg-slate-900/80 hover:bg-slate-950 rounded-xl text-emerald-400 flex items-center gap-2 cursor-pointer transition-all hover:scale-105 active:scale-95 group font-mono text-[11px] font-bold"
-              title="Open System Explorer & Folders"
-            >
-              <Cpu className="w-4 h-4 text-emerald-400 group-hover:rotate-12 transition-transform" />
-              <span>EXPLORE</span>
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-            </button>
-
+      <header className="border-b border-emerald-500/10 bg-[#0B130E]/85 backdrop-blur-md sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 py-3.5 flex flex-wrap justify-between items-center gap-4">
+          <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
             <div className="flex items-center gap-2.5">
               <div className="flex flex-col items-start justify-center">
                 <Logo size="sm" showSlogan={false} className="!items-start" />
-                <span className="text-[8px] sm:text-[9px] text-slate-500 font-mono block mt-0.5 tracking-wider">GHG ACCREDITED ENVIRONMENTAL SCIENCE INDEX</span>
+                <span className="text-[8px] sm:text-[9px] text-slate-500 font-mono block mt-0.5 tracking-wider uppercase">GHG ACCREDITED SCIENCE INDEX</span>
               </div>
             </div>
+            
+            {/* Action Explore Button */}
+            <button
+              id="top-left-system-btn"
+              onClick={() => setIsExtraDrawerOpen(true)}
+              className="px-3 py-1.5 border border-emerald-500/25 hover:border-emerald-400 bg-slate-950 rounded-xl text-emerald-400 flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95 group font-mono text-[10px] font-bold"
+              title="Open System Explorer & Folders"
+            >
+              <Cpu className="w-3.5 h-3.5 text-emerald-400 group-hover:rotate-12 transition-transform" />
+              <span>EXPLORE</span>
+            </button>
           </div>
 
           {/* Quick HUD Metrics */}
-          <div className="flex items-center gap-4 text-xs">
-            <div className="hidden md:flex gap-4 border-r border-slate-800/80 pr-4">
+          <div className="flex items-center gap-3.5 text-xs w-full sm:w-auto justify-end">
+            <div className="flex items-center gap-4 border-r border-[#10B981]/15 pr-4">
               <div>
-                <span className="text-slate-500 block text-[9px] uppercase font-mono">My Baseline</span>
-                <span className="font-mono font-bold text-white text-right block">{totalTons} tons CO₂/yr</span>
+                <span className="text-slate-500 block text-[8px] uppercase font-mono leading-none mb-0.5">My Baseline</span>
+                <span className="font-mono font-bold text-white text-right block text-[11.5px]">{totalTons} t CO₂/yr</span>
               </div>
               <div>
-                <span className="text-slate-500 block text-[9px] uppercase font-mono">Carbon Class</span>
-                <span className="font-mono font-bold text-carbon-primary block text-right">Tier {profile.level}</span>
+                <span className="text-slate-500 block text-[8px] uppercase font-mono leading-none mb-0.5">Tier Carbon</span>
+                <span className="font-mono font-bold text-carbon-primary block text-right text-[11.5px]">{profile.level}</span>
               </div>
-              <div>
-                <span className="text-slate-500 block text-[9px] uppercase font-mono">Streak</span>
-                <span className="font-mono font-bold text-amber-400 block text-right">{profile.streak} Days</span>
+              <div className="hidden xs:block">
+                <span className="text-slate-500 block text-[8px] uppercase font-mono leading-none mb-0.5">Streak</span>
+                <span className="font-mono font-bold text-amber-400 block text-right text-[11.5px]">{profile.streak} Days</span>
               </div>
             </div>
 
-            {/* Cloud Storage Account Connector button */}
-            <button
-               id="top-header-cloud-btn"
-               onClick={() => setIsExtraDrawerOpen(true)}
-               className={`flex items-center gap-2 px-3.5 py-1.5 border rounded-lg font-medium transition-all cursor-pointer ${
-                 supabaseUserId 
-                   ? 'border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/25 text-emerald-400' 
-                   : 'border-indigo-500/30 bg-indigo-500/15 hover:bg-indigo-500/30 text-indigo-300 shadow-lg shadow-indigo-500/5 animate-pulse'
-               }`}
-             >
-               <LoginLogo size="16" />
-               {supabaseUserId ? (
-                 <span className="hidden sm:inline">Synced Profile</span>
-               ) : (
-                 <span className="hidden sm:inline">Create Account / Login</span>
-               )}
-             </button>
+            {/* Cloud Storage Account Indicator */}
+            <div className="flex items-center gap-1.5 bg-slate-950/45 border border-[#10B981]/15 rounded-xl px-3 py-1.5 font-mono text-[11px]">
+              <span className="w-2 h-2 rounded-full bg-emerald-450 animate-pulse" />
+              <span className="font-bold text-white max-w-[120px] truncate">{profile.name}</span>
+            </div>
 
+            {/* Logout Trigger */}
             <button
-              id="top-header-workspace-btn"
-              onClick={() => {
-                setIsExtraDrawerOpen(true);
-              }}
-              className="flex items-center gap-2 px-3.5 py-1.5 border border-slate-800 bg-white/5 hover:bg-white/10 rounded-lg text-slate-300 font-medium transition-all cursor-pointer"
+              onClick={handleSignOut}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 rounded-xl text-red-300 font-mono text-[11px] font-bold transition-all cursor-pointer select-none active:scale-95"
+              title="Secure Log Out"
             >
-              <Cpu className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">System Explorer</span>
-            </button>
-
-            <button
-              onClick={() => setInPortal(false)}
-              className="flex items-center gap-2 px-3.5 py-1.5 border border-slate-800 bg-white/5 hover:bg-white/10 rounded-lg text-slate-300 font-medium transition-all cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              Exit Portal
+              <LogOut className="w-3.5 h-3.5 text-red-400" />
+              <span className="hidden sm:inline">Log Out</span>
             </button>
           </div>
         </div>
