@@ -6,6 +6,7 @@ import {
   Eye, EyeOff, Github, Chrome, Apple, ArrowRight
 } from 'lucide-react';
 import Logo from './Logo';
+import LoginLogo from './LoginLogo';
 
 interface SupabaseAuthProps {
   onSessionChange: (session: any) => void;
@@ -130,33 +131,109 @@ export default function SupabaseAuth({ onSessionChange, userId, onSyncRequest, s
   };
 
   return (
-    <div id="supabase-auth-panel" className="relative overflow-hidden text-left h-full flex flex-col justify-between rounded-3xl bg-slate-950/40 border border-white/5 shadow-2xl shadow-slate-950/50">
-      
-      {/* 1. Subtle, colorful mesh gradient background with glowing ambient light blobs */}
-      <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/45 via-slate-900/60 to-slate-950/95 pointer-events-none" />
-      
-      {/* soft glowing radial blobs behind the card for visual depth */}
-      <div className="absolute -top-12 -left-12 w-48 h-48 bg-violet-600/15 rounded-full blur-3xl pointer-events-none animate-pulse" style={{ animationDuration: '8s' }} />
-      <div className="absolute -bottom-16 -right-16 w-52 h-52 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div 
+      id="supabase-auth-panel" 
+      className={`relative overflow-hidden text-left h-full flex flex-col justify-between rounded-3xl border transition-all duration-500 shadow-2xl ${
+        userId 
+          ? 'bg-slate-950/40 border-white/5 shadow-slate-950/50' 
+          : 'bg-[#F9FAF6] border-slate-200/85 shadow-xl shadow-slate-950/5'
+      }`}
+    >
+      <svg className="hidden">
+        <defs>
+          {/* Gradients for custom environmental background illustrations */}
+          <linearGradient id="auth-leaf-grad-1" x1="12" y1="90" x2="38" y2="12" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#00E676" />
+            <stop offset="100%" stopColor="#00BFA5" />
+          </linearGradient>
+          <linearGradient id="auth-leaf-grad-2" x1="12" y1="90" x2="46" y2="28" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#059669" />
+            <stop offset="100%" stopColor="#3B82F6" />
+          </linearGradient>
+          <linearGradient id="turbine-blade-grad" x1="50" y1="35" x2="48" y2="5" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#00E676" />
+            <stop offset="100%" stopColor="#00BFA5" />
+          </linearGradient>
+        </defs>
+      </svg>
 
-      {/* Main glass containers */}
+      {/* Background variations depending on Login / Synced Profile states */}
+      {userId ? (
+        <>
+          {/* Synced Profile: Dark, gorgeous technical slate */}
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/45 via-slate-900/60 to-slate-950/95 pointer-events-none" />
+          <div className="absolute -top-12 -left-12 w-48 h-48 bg-violet-600/15 rounded-full blur-3xl pointer-events-none animate-pulse" style={{ animationDuration: '8s' }} />
+          <div className="absolute -bottom-16 -right-16 w-52 h-52 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+        </>
+      ) : (
+        <>
+          {/* Custom Ivory Paper Textured Background with Leaves & Turbines from the requested image */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-[#F1F4EE] via-[#FBFDF9] to-[#F1F5EE] pointer-events-none" />
+          
+          {/* Dot grid texture */}
+          <div className="absolute inset-0 opacity-[0.025] pointer-events-none mix-blend-overlay bg-[radial-gradient(#0c3a33_1px,transparent_1px)] [background-size:20px_20px]" />
+
+          {/* Bottom Left: Watercolor organic leaves */}
+          <div className="absolute -bottom-10 -left-10 w-52 h-52 opacity-55 pointer-events-none select-none transition-transform duration-700 hover:scale-105">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+              <path d="M 12 90 C 35 75 42 42 22 24 C 8 10 18 -5 38 12 C 55 24 58 48 42 72 Q 28 82 12 90 Z" fill="url(#auth-leaf-grad-1)" />
+              <path d="M 12 90 C 45 88 56 68 62 48 C 66 32 58 20 46 28 C 34 36 24 64 12 90 Z" fill="url(#auth-leaf-grad-2)" opacity="0.8" />
+              <path d="M 12 90 Q 38 52 42 24" stroke="#ffffff" strokeWidth="1" opacity="0.6" strokeLinecap="round" />
+              <path d="M 12 90 Q 48 72 62 48" stroke="#ffffff" strokeWidth="0.8" opacity="0.4" strokeLinecap="round" />
+            </svg>
+          </div>
+
+          {/* Bottom Right: Thin structural wind turbine lines */}
+          <div className="absolute -bottom-4 -right-2 w-48 h-60 opacity-35 pointer-events-none select-none">
+            <svg viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+              {/* Primary Turbine */}
+              <line x1="50" y1="110" x2="50" y2="35" stroke="#0C3A33" strokeWidth="1" strokeLinecap="round" opacity="0.3" />
+              <circle cx="50" cy="35" r="2.5" fill="#00BFA5" opacity="0.8" />
+              <path d="M 50 35 Q 52 15 48 5 Z" fill="url(#turbine-blade-grad)" opacity="0.35" />
+              <path d="M 50 35 Q 68 45 78 40 Z" fill="url(#turbine-blade-grad)" opacity="0.35" />
+              <path d="M 50 35 Q 32 45 22 40 Z" fill="url(#turbine-blade-grad)" opacity="0.35" />
+
+              {/* Smaller Secondary Turbine */}
+              <line x1="82" y1="110" x2="82" y2="55" stroke="#3B82F6" strokeWidth="0.8" strokeLinecap="round" opacity="0.2" />
+              <circle cx="82" cy="55" r="1.5" fill="#3B82F6" opacity="0.6" />
+              <path d="M 82 55 Q 83 40 80 30 Z" fill="#3B82F6" opacity="0.2" />
+              <path d="M 82 55 Q 96 62 102 58 Z" fill="#3B82F6" opacity="0.2" />
+              <path d="M 82 55 Q 68 62 62 58 Z" fill="#3B82F6" opacity="0.2" />
+            </svg>
+          </div>
+        </>
+      )}
+
+      {/* Main Container Layer */}
       <div className="relative z-10 p-6 flex-1 flex flex-col justify-between">
         <div>
           
-          {/* Header metadata branding */}
+          {/* Header metadata decoration */}
           <div className="flex items-start justify-between mb-6">
             <div className="flex items-center gap-3">
-              <Logo size="xs" showSlogan={false} className="!items-start" />
-              <div className="border-l border-white/10 pl-3">
-                <h3 className="text-[10px] font-bold text-white tracking-widest font-mono uppercase">CarbonSync</h3>
-                <p className="text-[8px] text-slate-500 font-mono tracking-widest uppercase leading-none mt-0.5">Decarbonization Vault</p>
-              </div>
+              {userId ? (
+                <>
+                  <Logo size="xs" showSlogan={false} className="!items-start" />
+                  <div className="border-l border-white/10 pl-3">
+                    <h3 className="text-[10px] font-bold text-white tracking-widest font-mono uppercase">CarbonSync</h3>
+                    <p className="text-[8px] text-slate-500 font-mono tracking-widest uppercase leading-none mt-0.5">Decarbonization Vault</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Logo size="xs" showSlogan={false} className="!items-start" variant="light" />
+                  <div className="border-l border-slate-200 pl-3">
+                    <h3 className="text-[10px] font-black text-[#0C3A33] tracking-widest font-mono uppercase">CarbonSteps</h3>
+                    <p className="text-[8px] text-slate-500 font-mono tracking-widest uppercase leading-none mt-0.5">Zero Footprint Portal</p>
+                  </div>
+                </>
+              )}
             </div>
             
             <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[9px] font-mono shadow-sm transition-all ${
-              isConfigured 
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
-                : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300'
+              userId 
+                ? (isConfigured ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300') 
+                : (isConfigured ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 font-bold' : 'bg-indigo-500/5 border-indigo-500/10 text-indigo-600 font-bold')
             }`}>
               <span className={`w-1.5 h-1.5 rounded-full ${isConfigured ? 'bg-emerald-400 animate-ping' : 'bg-indigo-400 animate-pulse'}`} />
               <span>{isConfigured ? 'SECURE DB' : 'CLOUD SANDBOX'}</span>
@@ -165,15 +242,24 @@ export default function SupabaseAuth({ onSessionChange, userId, onSyncRequest, s
 
           {/* Dev credentials guidance */}
           {!isConfigured && (
-            <div id="supabase-key-warning" className="bg-slate-900/80 border border-white/5 rounded-2xl p-3.5 mb-5 text-[11px] text-slate-300 leading-relaxed space-y-2">
-              <div className="flex items-center gap-2 font-bold text-indigo-400 font-mono">
+            <div 
+              id="supabase-key-warning" 
+              className={`rounded-2xl p-3.5 mb-5 text-[11px] leading-relaxed space-y-2 border ${
+                userId 
+                  ? 'bg-slate-900/80 border-white/5 text-slate-300' 
+                  : 'bg-white/80 backdrop-blur-md border-slate-200/60 text-slate-700 shadow-sm shadow-[#0a3d36]/5'
+              }`}
+            >
+              <div className="flex items-center gap-2 font-bold font-mono text-emerald-700">
                 <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>SANDBOX MODE ACTIVE</span>
               </div>
-              <p className="text-[10.5px] text-slate-400">
+              <p className={userId ? 'text-slate-400 text-[10.5px]' : 'text-slate-600 text-[10.5px]'}>
                 Operates instantly using a fast virtual cloud sandbox. To connect to live production PostgreSQL, add your tokens in AI Studio's <strong>Settings / Secrets</strong> tab:
               </p>
-              <div className="bg-slate-950/80 p-2.5 rounded-xl border border-white/5 font-mono text-[9px] text-cyan-400 space-y-1 select-all">
+              <div className={`p-2.5 rounded-xl border font-mono text-[9px] space-y-1 select-all ${
+                userId ? 'bg-slate-950/80 border-white/5 text-cyan-400' : 'bg-slate-50 border-slate-200 text-teal-800'
+              }`}>
                 <div>VITE_SUPABASE_URL = "https://your-proj.supabase.co"</div>
                 <div>VITE_SUPABASE_ANON_KEY = "your-anon-role-id"</div>
               </div>
@@ -182,14 +268,18 @@ export default function SupabaseAuth({ onSessionChange, userId, onSyncRequest, s
 
           {/* Banner notification feedbacks */}
           {errorMessage && (
-            <div className="bg-red-500/10 border border-red-500/20 backdrop-blur-md rounded-2xl p-3 mb-4 text-xs text-red-300 flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 mt-0.5 text-red-400 flex-shrink-0" />
+            <div className={`border backdrop-blur-md rounded-2xl p-3 mb-4 text-xs flex items-start gap-2.5 ${
+              userId ? 'bg-red-500/10 border-red-500/20 text-red-300' : 'bg-red-50/90 border-red-200 text-red-800 shadow-sm'
+            }`}>
+              <AlertCircle className="w-4 h-4 mt-0.5 text-red-500 flex-shrink-0" />
               <span className="leading-relaxed">{errorMessage}</span>
             </div>
           )}
           {successMessage && (
-            <div className="bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-md rounded-2xl p-3 mb-4 text-xs text-emerald-300 flex items-start gap-2.5">
-              <CheckCircle className="w-4 h-4 mt-0.5 text-emerald-400 flex-shrink-0" />
+            <div className={`border backdrop-blur-md rounded-2xl p-3 mb-4 text-xs flex items-start gap-2.5 ${
+              userId ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' : 'bg-emerald-50/90 border-emerald-200 text-emerald-850 shadow-sm'
+            }`}>
+              <CheckCircle className="w-4 h-4 mt-0.5 text-emerald-600 flex-shrink-0" />
               <span className="leading-relaxed">{successMessage}</span>
             </div>
           )}
@@ -275,171 +365,177 @@ export default function SupabaseAuth({ onSessionChange, userId, onSyncRequest, s
             </div>
           ) : (
             
-            /* Interactive Premium Floating Login Card Form */
-            <form onSubmit={handleAuthSubmit} className="space-y-4">
-              <div className="text-left pb-1">
-                <h4 className="text-xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent font-sans tracking-tight">
-                  {isSignUp ? "Create dynamic account." : "Welcome back."}
+            /* Interactive Premium Custom Styled Light Theme Login Page Form matching user's reference */
+            <form onSubmit={handleAuthSubmit} className="space-y-5">
+              
+              {/* Centered Key + Profile Graphic (LoginLogo) */}
+              <div className="flex flex-col items-center justify-center pt-2 pb-1 text-center">
+                <div className="bg-white p-4.5 rounded-full shadow-md shadow-[#0c3a33]/5 border border-emerald-500/10 mb-4 transition-transform duration-500 hover:scale-105 active:scale-95">
+                  <LoginLogo size="64" />
+                </div>
+                
+                <h4 className="text-2xl font-black text-[#0B2E28] tracking-tight font-display uppercase leading-none">
+                  Login / Sign Up
                 </h4>
-                <p className="text-xs text-slate-400 mt-1 font-sans">
-                  {isSignUp 
-                    ? "Start tracking your carbon story with modern diagnostics." 
-                    : "Access your cloud synchronization & global elite ranks."}
+                <p className="text-[11.5px] text-slate-500 mt-2 font-medium leading-relaxed max-w-[280px]">
+                  Track & Reduce Your Carbon Footprint. <br />Simple. Personalized.
                 </p>
               </div>
 
-              {/* Form entries with focus scale glow transitions */}
-              {isSignUp && (
+              {/* Form card wrapper for frosted premium transparency look */}
+              <div className="bg-white/80 backdrop-blur-md p-4.5 rounded-2xl border border-slate-200/50 space-y-3.5 shadow-sm">
+                
+                {isSignUp && (
+                  <div className="relative group">
+                    <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 transition-colors group-focus-within:text-[#00BFA5]" />
+                    <input
+                      id="auth-name-input"
+                      type="text"
+                      placeholder="Full Name (e.g. Marcus Aero)"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full bg-white hover:bg-white focus:bg-white border border-slate-200 focus:border-[#00BFA5] rounded-xl py-3 pl-11 pr-4 text-sm text-slate-900 placeholder-slate-400 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#00BFA5]/10"
+                      required
+                    />
+                  </div>
+                )}
+
                 <div className="relative group">
-                  <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 transition-colors group-focus-within:text-violet-400" />
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 transition-colors group-focus-within:text-[#00BFA5]" />
                   <input
-                    id="auth-name-input"
-                    type="text"
-                    placeholder="Full Name (e.g. Marcus Aero)"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-white/[0.03] hover:bg-white/[0.06] focus:bg-slate-950 border border-white/10 hover:border-white/20 focus:border-violet-500/80 rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-slate-500/80 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-violet-500/10"
+                    id="auth-email-input"
+                    type="email"
+                    placeholder="Email Address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-white hover:bg-white focus:bg-white border border-slate-200 focus:border-[#00BFA5] rounded-xl py-3 pl-11 pr-4 text-sm text-slate-900 placeholder-slate-400 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#00BFA5]/10"
                     required
                   />
                 </div>
-              )}
 
-              <div className="relative group">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 transition-colors group-focus-within:text-violet-400" />
-                <input
-                  id="auth-email-input"
-                  type="email"
-                  placeholder="Email Address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-white/[0.03] hover:bg-white/[0.06] focus:bg-slate-950 border border-white/10 hover:border-white/20 focus:border-violet-500/80 rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-slate-500/80 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-violet-500/10"
-                  required
-                />
-              </div>
-
-              <div className="relative group">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 transition-colors group-focus-within:text-violet-400" />
-                <input
-                  id="auth-password-input"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Create Secure Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-white/[0.03] hover:bg-white/[0.06] focus:bg-slate-950 border border-white/10 hover:border-white/20 focus:border-violet-500/80 rounded-xl py-3 pl-11 pr-11 text-sm text-white placeholder-slate-500/80 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-violet-500/10"
-                  minLength={6}
-                  required
-                />
-                
-                {/* 3. Password Toggle Action */}
-                <button
-                  type="button"
-                  id="btn-password-toggle"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-3.5 text-slate-400 hover:text-white transition-colors cursor-pointer"
-                  title={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-
-              {/* 4. Remember Me and Forgot Password linkages */}
-              <div className="flex items-center justify-between text-xs font-sans text-slate-400 pt-0.5 select-noneId">
-                <label className="flex items-center gap-2 cursor-pointer group">
+                <div className="relative group">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 transition-colors group-focus-within:text-[#00BFA5]" />
                   <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="rounded border-white/10 bg-white/5 text-violet-500 focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5 transition-colors cursor-pointer"
+                    id="auth-password-input"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Create Secure Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-white hover:bg-white focus:bg-white border border-slate-200 focus:border-[#00BFA5] rounded-xl py-3 pl-11 pr-11 text-sm text-slate-900 placeholder-slate-400 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#00BFA5]/10"
+                    minLength={6}
+                    required
                   />
-                  <span className="group-hover:text-slate-200 transition-colors">Remember me</span>
-                </label>
-                
+                  
+                  <button
+                    type="button"
+                    id="btn-password-toggle"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-3.5 text-slate-400 hover:text-[#0C3A33] transition-colors cursor-pointer"
+                    title={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                {/* Remember Me and Forgot Password linkages */}
+                <div className="flex items-center justify-between text-[11px] font-sans text-slate-500 pt-0.5 select-none text-left">
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="rounded border-slate-200 bg-white text-[#00BFA5] focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5 transition-colors cursor-pointer"
+                    />
+                    <span className="group-hover:text-slate-800 transition-colors">Remember me</span>
+                  </label>
+                  
+                  <button
+                    type="button"
+                    id="btn-forgot-password-link"
+                    onClick={() => setSuccessMessage("Password reset instructions dispatched to your email! (Simulated)")}
+                    className="hover:text-[#00BFA5] transition-colors hover:underline cursor-pointer font-semibold"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+
+                {/* Submit Activation Button */}
                 <button
-                  type="button"
-                  id="btn-forgot-password-link"
-                  onClick={() => setSuccessMessage("Password reset instructions dispatched to your email! (Simulated)")}
-                  className="hover:text-violet-400 transition-colors hover:underline cursor-pointer"
+                  id="btn-auth-submit"
+                  type="submit"
+                  disabled={authLoading}
+                  className="w-full py-3 bg-[#0C3A33] hover:bg-[#072420] text-white font-bold rounded-xl text-xs font-sans tracking-widest uppercase cursor-pointer transition-all flex items-center justify-center gap-2 shadow-md shadow-[#0C3A33]/15 duration-200 hover:-translate-y-0.5 active:translate-y-0"
                 >
-                  Forgot Password?
+                  {authLoading ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Connecting...
+                    </>
+                  ) : (
+                    <>
+                      <span>{isSignUp ? 'Create Account' : 'Secure Sign In'}</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </>
+                  )}
                 </button>
               </div>
 
-              {/* Submit Activation Button */}
-              <button
-                id="btn-auth-submit"
-                type="submit"
-                disabled={authLoading}
-                className="w-full py-3 bg-gradient-to-r from-violet-600 to-cyan-500 hover:from-violet-500 hover:to-cyan-400 text-white font-semibold rounded-xl text-xs font-sans tracking-wider uppercase cursor-pointer transition-all flex items-center justify-center gap-2 shadow-lg shadow-violet-500/15 duration-200 hover:-translate-y-0.5 active:translate-y-0"
-              >
-                {authLoading ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    Connecting...
-                  </>
-                ) : (
-                  <>
-                    <span>{isSignUp ? 'Create Dynamic Profile' : 'Sign In Now'}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </>
-                )}
-              </button>
-
-              {/* Divider standard section */}
-              <div className="relative my-5">
+              {/* Divider section */}
+              <div className="relative my-3">
                 <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                  <div className="w-full border-t border-white/[0.06]" />
+                  <div className="w-full border-t border-slate-250" />
                 </div>
-                <div className="relative flex justify-center text-[10px] uppercase tracking-wider font-mono">
-                  <span className="bg-[#0f172a] px-3 text-slate-500 font-medium">Or continue with</span>
+                <div className="relative flex justify-center text-[9px] uppercase tracking-wider font-mono">
+                  <span className="bg-[#FAFBF8] px-3.5 text-slate-400 font-bold">Or continue with</span>
                 </div>
               </div>
 
-              {/* Minimalist well-spaced social connectors */}
-              <div className="grid grid-cols-3 gap-3">
+              {/* Premium well-spaced social connectors */}
+              <div className="grid grid-cols-3 gap-2.5">
                 <button
                   type="button"
                   id="social-btn-google"
                   onClick={() => setSuccessMessage("Google Social Auth active in your identity container.")}
-                  className="flex justify-center items-center py-2.5 px-4 bg-white/[0.02] hover:bg-white/[0.06] active:bg-white/[0.04] border border-white/[0.06] hover:border-violet-500/30 rounded-xl transition-all duration-200 group cursor-pointer"
+                  className="flex justify-center items-center py-2.5 px-4 bg-white hover:bg-slate-50 border border-slate-200 hover:border-emerald-500/20 rounded-xl transition-all duration-150 group cursor-pointer shadow-sm"
                   title="Sign in with Google"
                 >
-                  <Chrome className="w-3.5 h-3.5 text-slate-350 group-hover:text-amber-400 group-hover:scale-110 transition-all duration-200" />
+                  <Chrome className="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-500 group-hover:scale-110 transition-all duration-200" />
                 </button>
                 <button
                   type="button"
                   id="social-btn-apple"
                   onClick={() => setSuccessMessage("Apple Secure ID active in your identity container.")}
-                  className="flex justify-center items-center py-2.5 px-4 bg-white/[0.02] hover:bg-white/[0.06] active:bg-white/[0.04] border border-white/[0.06] hover:border-violet-500/30 rounded-xl transition-all duration-200 group cursor-pointer"
+                  className="flex justify-center items-center py-2.5 px-4 bg-white hover:bg-slate-50 border border-slate-200 hover:border-emerald-500/20 rounded-xl transition-all duration-150 group cursor-pointer shadow-sm"
                   title="Sign in with Apple"
                 >
-                  <Apple className="w-3.5 h-3.5 text-slate-350 group-hover:text-white group-hover:scale-110 transition-all duration-200" />
+                  <Apple className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-900 group-hover:scale-110 transition-all duration-200" />
                 </button>
                 <button
                   type="button"
                   id="social-btn-github"
                   onClick={() => setSuccessMessage("GitHub developer identity active in your container.")}
-                  className="flex justify-center items-center py-2.5 px-4 bg-white/[0.02] hover:bg-white/[0.06] active:bg-white/[0.04] border border-white/[0.06] hover:border-violet-500/30 rounded-xl transition-all duration-200 group cursor-pointer"
+                  className="flex justify-center items-center py-2.5 px-4 bg-white hover:bg-slate-50 border border-slate-200 hover:border-emerald-500/20 rounded-xl transition-all duration-150 group cursor-pointer shadow-sm"
                   title="Sign in with GitHub"
                 >
-                  <Github className="w-3.5 h-3.5 text-slate-350 group-hover:text-violet-400 group-hover:scale-110 transition-all duration-200" />
+                  <Github className="w-3.5 h-3.5 text-slate-500 group-hover:text-teal-600 group-hover:scale-110 transition-all duration-200" />
                 </button>
               </div>
 
               {/* Footer text switches */}
-              <div className="text-center pt-2">
+              <div className="text-center pt-1.5 pb-1">
                 <button
                   id="btn-toggle-auth-mode"
                   type="button"
                   onClick={() => setIsSignUp(!isSignUp)}
-                  className="text-xs text-slate-400 hover:text-white transition-colors cursor-pointer font-sans"
+                  className="text-[11.5px] text-slate-500 hover:text-slate-800 transition-colors cursor-pointer font-sans"
                 >
                   {isSignUp ? (
                     <>
-                      Already have an account? <span className="text-violet-400 font-semibold hover:underline">Sign In</span>
+                      Already have an account? <span className="text-emerald-700 font-bold hover:underline">Sign In</span>
                     </>
                   ) : (
                     <>
-                      Don't have an account? <span className="text-cyan-400 font-semibold hover:underline">Sign Up</span>
+                      Don't have an account? <span className="text-teal-700 font-bold hover:underline font-display">Sign Up Free</span>
                     </>
                   )}
                 </button>
@@ -449,7 +545,9 @@ export default function SupabaseAuth({ onSessionChange, userId, onSyncRequest, s
         </div>
 
         {/* Fixed Footer info */}
-        <div className="mt-6 pt-4 border-t border-white/[0.03] text-[9.5px] text-slate-500 font-mono leading-relaxed select-none">
+        <div className={`mt-6 pt-4 border-t text-[9.5px] font-mono leading-relaxed select-none ${
+          userId ? 'border-white/[0.03] text-slate-500' : 'border-slate-200 text-slate-450'
+        }`}>
           <span>Enterprise-grade authentication layer secured with high performance SSL & RLS encryption metrics.</span>
         </div>
       </div>
