@@ -3,6 +3,7 @@ import {
   Sparkles, Award, Play, Globe, Shield, Activity, 
   ArrowRight, Users, Flame, ExternalLink, Leaf, FolderOpen, Cloud, User
 } from 'lucide-react';
+import Logo from './Logo';
 import { LeaderboardUser } from '../types';
 
 interface LandingPageProps {
@@ -31,7 +32,11 @@ export default function LandingPage({ onStart, leaderboard, onOpenExtraDrawer, o
       <div className="aurora" />
 
       {/* Top Header Controls bar */}
-      <div className="absolute right-6 top-6 z-[60] flex justify-end items-center">
+      <div className="absolute left-6 right-6 top-6 z-[60] flex justify-between items-center">
+        <div>
+          <Logo size="sm" showSlogan={true} className="!items-start" />
+        </div>
+
         {onOpenCloudIdentity && (
           <button
             id="landing-cloud-auth-btn"
@@ -81,28 +86,16 @@ export default function LandingPage({ onStart, leaderboard, onOpenExtraDrawer, o
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
             <a
-              href="#how-it-works"
+              href="#analyze"
+              onClick={(e) => {
+                e.preventDefault();
+                onStart();
+              }}
               className="flex items-center justify-center gap-2 px-8 py-4 border border-slate-800 bg-slate-900/45 hover:bg-slate-800 text-slate-200 hover:text-white rounded-xl font-medium transition-all"
             >
               <Play className="w-4 h-4 fill-current text-carbon-secondary" />
               Watch Technical Demo
             </a>
-          </div>
-
-          {/* Quick Metrics */}
-          <div className="grid grid-cols-3 gap-6 pt-6 border-t border-slate-800/60 max-w-md">
-            <div>
-              <span className="text-2xl font-bold font-mono text-white">418.5</span>
-              <span className="text-[10px] text-slate-500 block uppercase tracking-wider mt-1">Global CO₂ PPM</span>
-            </div>
-            <div>
-              <span className="text-2xl font-bold font-mono text-white">12.5k</span>
-              <span className="text-[10px] text-slate-500 block uppercase tracking-wider mt-1">Quests Resolved</span>
-            </div>
-            <div>
-              <span className="text-2xl font-bold font-mono text-carbon-primary text-glow-green">94%</span>
-              <span className="text-[10px] text-slate-500 block uppercase tracking-wider mt-1">Target Reduction</span>
-            </div>
           </div>
         </div>
 

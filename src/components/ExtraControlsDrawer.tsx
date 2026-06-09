@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, ShieldCheck } from 'lucide-react';
 import SupabaseAuth from './SupabaseAuth';
+import Logo from './Logo';
 
 interface ExtraControlsDrawerProps {
   isOpen: boolean;
@@ -46,12 +47,10 @@ export default function ExtraControlsDrawer({
             {/* Header portion */}
             <div className="p-5 border-b border-white/[0.04] bg-slate-950 flex justify-between items-center" id="drawer-header">
               <div className="flex items-center gap-3">
-                <div className="w-8.5 h-8.5 rounded-xl bg-gradient-to-tr from-indigo-500/20 to-violet-500/5 flex items-center justify-center border border-indigo-500/20">
-                  <ShieldCheck className="w-4.5 h-4.5 text-indigo-400" />
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-white tracking-wider uppercase font-mono">Carbonverse Account</h3>
-                  <p className="text-[9px] text-slate-500 font-mono uppercase tracking-widest">Secure Credentials Portal</p>
+                <Logo size="xs" showSlogan={false} className="!items-start" />
+                <div className="border-l border-white/10 pl-3">
+                  <h3 className="text-[10px] font-bold text-white tracking-wider uppercase font-mono">Secure Vault</h3>
+                  <p className="text-[8px] text-slate-500 font-mono uppercase tracking-widest leading-none mt-0.5">RLS Credentials Portal</p>
                 </div>
               </div>
               

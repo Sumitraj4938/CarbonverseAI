@@ -5,6 +5,7 @@ import {
   AlertCircle, ChevronRight, Terminal, Copy, LogOut, Loader2,
   Eye, EyeOff, Github, Chrome, Apple, ArrowRight
 } from 'lucide-react';
+import Logo from './Logo';
 
 interface SupabaseAuthProps {
   onSessionChange: (session: any) => void;
@@ -145,12 +146,10 @@ export default function SupabaseAuth({ onSessionChange, userId, onSyncRequest, s
           {/* Header metadata branding */}
           <div className="flex items-start justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500/30 via-violet-500/5 to-cyan-500/30 flex items-center justify-center border border-violet-500/30 shadow-inner">
-                <Cloud className="w-4.5 h-4.5 text-violet-400" />
-              </div>
-              <div>
-                <h3 className="text-xs font-bold text-white tracking-widest font-mono uppercase">CarbonSync Portal</h3>
-                <p className="text-[9px] text-slate-500 font-mono tracking-widest uppercase">Decarbonization Vault</p>
+              <Logo size="xs" showSlogan={false} className="!items-start" />
+              <div className="border-l border-white/10 pl-3">
+                <h3 className="text-[10px] font-bold text-white tracking-widest font-mono uppercase">CarbonSync</h3>
+                <p className="text-[8px] text-slate-500 font-mono tracking-widest uppercase leading-none mt-0.5">Decarbonization Vault</p>
               </div>
             </div>
             

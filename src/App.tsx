@@ -12,6 +12,7 @@ import RoutePlannerSection from './components/RoutePlannerSection';
 import QuestsSection from './components/QuestsSection';
 import MarketplaceSection from './components/MarketplaceSection';
 import ExtraControlsDrawer from './components/ExtraControlsDrawer';
+import Logo from './components/Logo';
 import { CarbonProfile, CarbonCalculatorData, EmissionBreakdown, LeaderboardUser } from './types';
 import { loadUserCarbonData, saveUserCarbonData } from './lib/supabase';
 
@@ -289,12 +290,9 @@ export default function App() {
             </button>
 
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-carbon-primary to-carbon-secondary flex items-center justify-center shadow-lg shadow-carbon-primary/10 select-none">
-                <Leaf className="w-5 h-5 text-carbon-dark" />
-              </div>
-              <div>
-                <h1 className="text-xl font-display font-medium text-white tracking-tight">CarbonVerse <span className="text-carbon-primary text-glow-green">AI</span></h1>
-                <span className="text-[10px] text-slate-500 font-mono block">GHG ACCREDITED ENVIRONMENTAL SCIENCE INDEX</span>
+              <div className="flex flex-col items-start justify-center">
+                <Logo size="sm" showSlogan={false} className="!items-start" />
+                <span className="text-[8px] sm:text-[9px] text-slate-500 font-mono block mt-0.5 tracking-wider">GHG ACCREDITED ENVIRONMENTAL SCIENCE INDEX</span>
               </div>
             </div>
           </div>
@@ -410,7 +408,7 @@ export default function App() {
       {/* Small design credit floating index */}
       <footer className="border-t border-slate-900 mt-20 bg-slate-950/30 py-6 text-center text-slate-600 text-xs font-mono">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
-          <span>CarbonVerse AI Dashboard / ISO 14064 Standard Environmental Compliances</span>
+          <span>CarbonSteps Dashboard / ISO 14064 Standard Environmental Compliances</span>
           <span className="flex items-center gap-1">Created for Environmental Hackathon <Sparkles className="w-3 h-3 text-carbon-primary" /></span>
         </div>
       </footer>

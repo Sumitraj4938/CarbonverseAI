@@ -1,5 +1,5 @@
 {
-  "name": "CarbonVerse AI",
+  "name": "CarbonSteps",
   "description": "See the hidden carbon cost of your life and compete to reduce it with an AI Carbon Coach and interactive analytics.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
