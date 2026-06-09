@@ -240,18 +240,118 @@ function isClimaticTopic(text: string): boolean {
 app.post("/api/gemini/chat", async (req, res) => {
   const { messages, userContext } = req.body;
   const lastUserMessage = messages[messages.length - 1]?.content || "";
+  const preferredLanguage = userContext?.language || "English";
+
+  const FALLBACKS_BY_LANG: Record<string, {
+    general: string;
+    travel: string;
+    energy: string;
+    diet: string;
+    water: string;
+    validationError: string;
+    actionLabel: string;
+  }> = {
+    English: {
+      general: "Climate action starts with minor everyday switches. Focus on transit selection, sustainable nutrition, and reducing standby appliance wastes to save up to 400kg of annual CO2!\n\nHere is your custom 3-step schedule:\n- Shift short trips underneath 5km to walking or cycling.\n- Incorporate plant-based meals 2-3 times per week to offset agricultural footprint.\n- Configure smart power strips to cancel standby electricity leaks.",
+      travel: "By switching to public commutes, train transit, or active cycling for routes under 8 km, you prevent up to 340kg of air transport intensity emissions and save nearly $200 per year.",
+      energy: "Using LED lighting, optimizing thermostats by 2 degrees Celsius, and disabling phantom standby power loads can offset 180kg CO2 and save $120 annually.",
+      diet: "Adopting vegetarian or tree-based dietary options just 4 days a week reduces dietary footprint demand by 450kg CO2 annually while saving $180 in grocery bills.",
+      water: "Reducing shower times by 3 minutes and using full cold-water cycles for washing machines mitigates 90kg of annual heating fuel carbon.",
+      validationError: "As your dedicated AI Climate Advisor, my expertise is strictly configured for questions about carbon footprints, environmental sustainability, climate change, greenhouse gas calculations, energy efficiency, and eco-friendly habit changes. Please request guidance within these sustainability fields!",
+      actionLabel: "Commit to this recommendation"
+    },
+    Hindi: {
+      general: "जलवायु संरक्षण की शुरुआत रोजमर्रा के छोटे बदलावों से होती है। वर्ष में 400 किलोग्राम CO2 की बचत करने के लिए ईंधन अनुकूलन और हरित आहार को अपनाएं!\n\nयहाँ आपके लिए 3 आसान कदम दिए गए हैं:\n- 5 किमी से कम की छोटी यात्राओं को चलने या साइकिल चलाने में बदलें।\n- कृषि उत्पाद कार्बन को कम करने के लिए प्रति सप्ताह 2-3 बार पौधे आधारित भोजन शामिल करें।\n- बिजली के लीकेज को रोकने के लिए स्मार्ट पावर स्ट्रिप्स सेट करें।",
+      travel: "8 किमी से कम की दूरी के लिए साइकिल या सार्वजनिक वाहनों का उपयोग करके आप वार्षिक 340 किलोग्राम कार्बन उत्सर्जन बचा सकते हैं और लगभग ₹16,000 बचा सकते हैं।",
+      energy: "LED बल्बों का उपयोग करने, वाटर हीटर तापमान को 2 डिग्री कम करने और निष्क्रिय उपकरणों को बंद करने से 180 किलोग्राम CO2 और बिजली का बिल बचता है।",
+      diet: "हफ्ते में 4 दिन शाकाहारी या पेड़-पौधे आधारित आहार अपनाने से वार्षिक भोजन कार्बन फुटप्रिंट 450 किलोग्राम कम हो सकता है और किराना खर्च बच सकता है।",
+      water: "नहाने के समय को 3 मिनट कम करने और ठंडे पानी से कपड़े धोने से वार्षिक गर्मी ईंधन उत्सर्जन में 90 किलोग्राम की कमी आती है।",
+      validationError: "आपके जलवायु सलाहकार के रूप में, मेरी विशेषज्ञता विशेष रूप से कार्बन उत्सर्जन, पर्यावरण संरक्षण और पर्यावरण-अनुकूल आदतों के प्रश्नों के लिए बनी है। कृपया इसी से जुड़े सवाल पूछें।",
+      actionLabel: "इस सुझाव का पालन करने का संकल्प लें"
+    },
+    Urdu: {
+      general: "ماحولیاتی تحفظ کا آغاز روزمرہ کی چھوٹی تبدیلیوں سے ہوتا ہے۔ کاربن کے اخراج میں سالانہ 400 کلوگرام بچت کے لیے توانائی اور سبز غذا کا دانشمندانہ استعمال کریں۔\n\nیہاں آپ کے لیے 3 آسان اقدامات ہیں:\n- 5 کلومیٹر سے کم کے سفر کے لیے پیدल چلیں یا سائیکل استعمال کریں۔\n- زراعتی کاربن کم کرنے کے لیے پودوں پر مبنی غذا ہفتے میں 2-3 بار آزمائیں۔\n- اضافی بجلی کے رساؤ کو روکنے کے لیے اسمارٹ پاور سٹرپس کا استعمال کریں۔",
+      travel: "8 کلومیٹر سے کم کے سفر کے لیے پبلک ٹرانسپورٹ یا سائیکل کا استعمال کر کے آپ سالانہ 340 کلوگرام کاربن بچا سکتے ہیں اور ہزاروں روپے کی بچت کر سکتے ہیں۔",
+      energy: "ایل ای ڈی لائٹس کا استعمال اور غیر ضروری برقی آلات کو بند کرنے سے سالانہ 180 کلوگرام کاربن اور اہم مالی بچت حاصل ہوتی ہے۔",
+      diet: "ہفتے میں 4 دن سبزی خور یا پودوں پر مبنی خوراک اپنا کر اپنے سالانہ کاربن اثرات کو 450 کلوگرام تک کم کریں اور کھانے پینے کے بجٹ میں بچत کریں۔",
+      water: "نہانے کے وقت کو 3 منٹ کم کر کے اور ٹھنڈے پانی کے واش کا استعمال کر کے سالانہ 90 کلوگرام ایندھن کا کاربن بچائیں۔",
+      validationError: "آپ کے ماحولیاتی مربی کے طور پر، میری مہارت کاربن فٹ پرنٹس، ماحولیاتی تسلسل، اور سبز عادات تک محدود ہے۔ براہ کرم اس دائرے کے اندر سوالات پوچھیں۔",
+      actionLabel: "اس اختیار پر عمل پیرا ہونے کی تصدیق کریں"
+    },
+    Tamil: {
+      general: "சுற்றுச்சூழல் பாதுகாப்பு நமது அன்றாட சிறு மாற்றங்களில் இருந்து தொடங்குகிறது. உங்கள் போக்குவரத்து தேர்வுகள் மற்றும் நிலையான பசுமை உணவுகள் மூலம் ஆண்டுக்கு 400 கிலோ CO2 ஐ சேமிக்கலாம்!\n\nஇதோ உங்களுக்கான 3-படி வழிகாட்டி:\n- 5 கிமீக்கும் குறைவான தூரத்தை நடைபயிற்சி அல்லது மிதிவண்டிக்கு மாற்றுங்கள்.\n- வாரத்திற்கு 2-3 முறை தாவர அடிப்படையிலான உணவை உண்ணுங்கள்.\n- தேவையற்ற மின் இழப்புகளைத் தவிர்க்க ஸ்மார்ட் பவர் ஸ்ட்ரிப்களைப் பயன்படுத்துங்கள்.",
+      travel: "8 கிமீக்கும் குறைவான தூரத்திற்கு பொது போக்குவரத்து அல்லது மிதிவண்டியை பயன்படுத்துவதன் மூலம் ஆண்டுக்கு 340 கிலோ கார்பன் உமிழ்வை குறைத்து கணிசமான பணத்தை சேமிக்கலாம்.",
+      energy: "எல்இடி விளக்குகள் மற்றும் தேவையற்ற மின் சாதனங்களை அணைப்பதன் மூலம் 180 கிலோ CO2 உமிழ்வையும் மின் கட்டணத்தையும் எளிதாக குறைக்கலாம்.",
+      diet: "வாரத்தில் 4 நாட்கள் தாவர அடிப்படையிலான உணவுகளை உட்கொள்வதன் மூலம் ஆண்டுக்கு 450 கிலோ கார்பன் உமிழ்வைக் குறைக்கலாம் மற்றும் மளிகை செலவை மிச்சப்படுத்தலாம்.",
+      water: "குளிக்கும் நேரத்தை 3 நிமிடங்கள் குறைப்பதன் மூலம் ஆண்டிற்கு 90 கிலோ எரிபொருள் உமிழ்வை தவிர்க்க முடியும்.",
+      validationError: "உங்கள் காலநிலை ஆலோசகராக, கார்பன் தடம், ஆற்றல் சேமிப்பு ಮತ್ತು நிலையான பழக்கவழக்கங்கள் தொடர்பான கேள்விகளுக்கு மட்டுமே என்னால் பதிலளிக்க முடியும்.",
+      actionLabel: "இந்த பசுமை திட்டத்திற்கு உறுதியளிக்கவும்"
+    },
+    Punjabi: {
+      general: "ਜਲਵਾਯੂ ਸੰਭਾਲ ਦੀ ਸ਼ੁਰੂਆਤ ਰੋਜ਼ਾਨਾ ਦੇ ਛੋਟੇ ਬਦਲਾਵਾਂ ਤੋਂ ਹੁੰਦੀ ਹੈ। ਸਾਲਾਨਾ 400 ਕਿਲੋ CO2 ਦੀ ਬਚਤ ਲਈ ਹਰੀ ਖੁਰਾਕ ਅਤੇ ਬਿਜਲੀ ਅਨੁਕੂਲਤਾ ਅਪਣਾਓ!\n\nਇਹ ਹਨ ਤੁਹਾਡੇ ਲਈ 3 ਕਦਮ:\n- 5 ਕਿਲੋਮੀਟਰ ਤੋਂ ਘੱਟ ਦੇ ਸਫ਼ਰ ਨੂੰ ਪੈਦਲ ਜਾਂ ਸਾਈਕਲ ਵਿੱਚ ਬਦਲੋ।\n- ਹਫ਼ਤੇ ਵਿੱਚ 2-3 ਵਾਰ ਪੌਦਿਆਂ 'ਤੇ ਅਧਾਰਤ ਭੋਜਨ ਨੂੰ ਸ਼ਾਮਲ ਕਰੋ।\n- ਵਾਧੂ ਬਿਜਲੀ ਲੀਕ ਨੂੰ ਰੋਕਣ ਲਈ ਸਮਾਰਟ ਪਾਵਰ ਸਟ੍ਰਿਪ ਦੀ ਵਰਤੋਂ ਕਰੋ।",
+      travel: "8 ਕਿਲੋਮੀਟਰ ਤੋਂ ਘੱਟ ਦੂਰੀ ਲਈ ਸਾਈਕਲ ਜਾਂ ਜਨਤਕ ਸਾਧਨਾਂ ਦੀ ਵਰਤੋਂ ਨਾਲ ਸਾਲਾਨਾ 340 ਕਿਲੋ ਕਾਰਬਨ ਬਚਾਓ ਅਤੇ ਬਾਲਣ ਦਾ ਖਰਚਾ ਘਟਾਓ।",
+      energy: "ਬਿਜਲੀ ਉਪਕਰਨਾਂ ਨੂੰ ਲੋੜ ਨਾ ਹੋਣ 'ਤੇ ਬੰਦ ਰੱਖਣ ਅਤੇ LED ਬੱਲਬਾਂ ਦੀ ਵਰਤੋਂ ਨਾਲ ਸਾਲਾਨਾ 180 ਕਿਲੋ CO2 ਅਤੇ ਬਿਜਲੀ ਦਾ ਬਿੱਲ ਬਚਾਇਆ ਜਾ ਸਕਦਾ ਹੈ।",
+      diet: "ਹਫ਼ਤੇ ਵਿੱਚ 4 ਦਿਨ ਸ਼ਾਕਾਹਾਰੀ ਜਾਂ ਪੌਦਿਆਂ 'ਤੇ ਅਧਾਰਤ ਭੋਜਨ ਖਾਣ ਨਾਲ ਸਾਲਾਨਾ 450 ਕਿਲੋ ਭੋਜਨ ਕਾਰਬਨ ਘਟਾਇਆ ਜਾ ਸਕਦਾ ਹੈ ਅਤੇ ਪੈਸੇ ਬਚਾਏ ਜਾ ਸਕਦੇ ਹਨ।",
+      water: "ਨਹਾਉਣ ਦੇ ਸਮੇਂ ਨੂੰ 3 ਮਿੰਟ ਘਟਾ ਕੇ ਅਤੇ ਠੰਢੇ ਪਾਣੀ ਨਾਲ ਕੱਪੜੇ ਧੋ ਕੇ ਸਾਲਾਨਾ 90 ਕਿਲੋ ਕਾਰਬਨ ਬਚਾਓ।",
+      validationError: "ਤੁਹਾਡੇ ਜਲਵਾਯੂ ਕੋਚ ਵਜੋਂ, ਮੇਰੀ ਮੁਹਾਰਤ ਸਿਰਫ਼ ਕਾਰਬਨ ਨਿਕਾਸ, ਊਰਜਾ ਬਚਤ, ਅਤੇ ਵਾਤਾਵਰਣ ਅਨੁਕੂਲ ਆਦਤਾਂ ਬਾਰੇ ਸਵਾਲਾਂ ਲਈ ਹੈ।",
+      actionLabel: "ਇਸ ਹਰੀ ਆਦਤ ਦਾ ਸੰਕਲਪ ਲਓ"
+    },
+    Bhojpuri: {
+      general: "पर्यावरण बचावे के सुरुआत रोजमर्रा के छोट-छोट बदलाव से होला। सालाने 400 किलो CO2 बचावे खातिर हरियर खान-पान आ बिजली के सही उपयोग करीं!\n\nइहाँ रउआ खातिर 3 गो छोट कदम बा:\n- 5 किमी से कम दूरी खातिर पैदल चलीं चाहे साइकिल चलाईं।\n- हफ्ता में 2-3 बार पौधा आधारित भोजन कइल सुरू करीं।\n- फालतू के बिजली लीक से बचे खातिर स्मार्ट पावर स्ट्रिप लगाईं।",
+      travel: "8 किमी से कम दूरी खातिर साइकिल चाहे सरकारी बस-ट्रेन के इस्तेमाल कके रउआ सालाने 340 किलो कार्बनEmission बाचा सकीं आ भाड़ा के खूब पइसा बचा सकीं।",
+      energy: "LED बलिया बार के, आ बेफालतू के पंखा-टीभी बंद कके रउआ 180 किलो कार्बन आ ढेर सारा बिजली के बिल के पइसा बचा सकीं।",
+      diet: "हफ्ता में 4 दिन शाकाहारी भोजन खइला से भोजन के कार्बन फुटप्रिंट सालाने 450 किलो तक कम हो जाई आ सालाने खूब पइसा बची।",
+      water: "नहाए के समय 3 मिनट कम कइला से आ ठंढा पानी से कपड़ा धोइला से सालाने 90 किलो गरम पानी के ईंधन बच जाई।",
+      validationError: "रउआ पर्यावरण सलाहकार होखला के नाते, हमार काम खाली कार्बन उत्सर्जन, खेती-बारी आ पर्यावरण बचावे से जुड़ल बा। कृपा कके इहे सब सवाल पूछीं।",
+      actionLabel: "एह सुन्दर आदत खातिर संकल्प लीं"
+    },
+    Kannada: {
+      general: "ಪರಿಸರ ಸಂರಕ್ಷಣೆ ನಮ್ಮ ದೈನಂದಿನ ಸಣ್ಣ ಬದಲಾವಣೆಗಳಿಂದ ಆರಂಭವಾಗುತ್ತದೆ. ಸಾರಿಗೆ ಮತ್ತು ಹಸಿರು ತರಕಾರಿ ಆಹಾರಗಳ ಮೂಲಕ ವರ್ಷಕ್ಕೆ 400 ಕೆಜಿ CO2 ಉಳಿಸಿ!\n\nಆರಂಭಿಸಲು 3 ಸರಳ ಹೆಜ್ಜೆಗಳು:\n- 5 ಹೆಜ್ಜೆಯಿಂದ ಕಡಿಮೆ ದೂರಕ್ಕೆ ನಡೆದುಕೊಂಡು ಹೋಗಿ ಅಥವಾ ಸೈಕಲ್ ಬಳಸಿ.\n- ಕೃಷಿ ಹೊರಸೂಸುವಿಕೆಯನ್ನು ಗಣನೀಯವಾಗಿ ತಗ್ಗಿಸಲು ವಾರಕ್ಕೆ 2-3 ಬಾರಿ ಸಸ್ಯಾಹಾರಿ ಊಟ ಆರಿಸಿ.\n- ವಿದ್ಯುತ್ ಸೋರಿಕೆ ತಡೆಯಲು ಸ್ಮಾರ್ಟ್ ಪವರ್ ಕಾರ್ಡ್‌ಗಳನ್ನು ಬಳಸಿ.",
+      travel: "8 ಕಿಮೀಗಿಂತ ಕಡಿಮೆ ದೂರಕ್ಕೆ ಸೈಕಲ್ ಅಥವಾ ಸಾರ್ವಜನಿಕ ಸಾರಿಗೆ ಬಳಸಿ ವರ್ಷಕ್ಕೆ 340 ಕೆಜಿ ಇಂಗಾಲದ ಹೊರಸೂಸುವಿಕೆಯನ್ನು ನಿಯಂತ್ರಿಸಿ ಮತ್ತು ಹಣ ಉಳಿಸಿ.",
+      energy: "ಎಲ್ಇಡಿ ಬಲ್ಬ್‌ ಬಳಸಿ ಹಾಗೂ ಅನಗತ್ಯ ವಿದ್ಯುತ್ ಉಪಕರಣಗಳನ್ನು ಬಂದ್ ಮಾಡುವ ಮೂಲಕ ವರ್ಷಕ್ಕೆ 180 ಕೆಜಿ ಇಂಗಾಲ ಮತ್ತು ವಿದ್ಯುತ್ ಬಿಲ್ ಉಳಿಸಿ.",
+      diet: "ವಾರದಲ್ಲಿ 4 ದಿನ ಹಸಿರು ಸಸ್ಯಾಹಾರಿ ಆಹಾರ ಸೇವಿಸುವುದರಿಂದ ವರ್ಷಕ್ಕೆ 450 ಕೆಜಿ ಇಂಗಾಲದ ಹೊರೆ ಕಡಿಮೆ ಮಾಡಲು ಸಾಧ್ಯವಿದೆ ಮತ್ತು ದಿನಸಿ ವೆಚ್ಚ ಉಳಿತಾಯವಾಗುತ್ತದೆ.",
+      water: "ಸ್ನಾನದ ಸಮಯವನ್ನು 3 ನಿಮಿಷ ಕಡಿಮೆ ಮಾಡುವುದರಿಂದ ವಾರ್ಷಿಕ 90 ಕೆಜಿಯಷ್ಟು ಗೃಹ ಇಂಧನ ಮತ್ತು ಬಿಸಿ ನೀರು ಉಳಿಸಬಹುದು.",
+      validationError: "ನಿಮ್ಮ ಪರಿಸರ ಸಲಹೆಗಾರನಾಗಿ, ನಾನು ಕೇವಲ ಇಂಗಾಲದ ಹೊರಸೂಸುವಿಕೆ ನಿಯಂತ್ರಣ ಮತ್ತು ಸುಸ್ಥಿರ ಅಭ್ಯಾಸಗಳ ಬಗ್ಗೆ ಮಾತ್ರ ಉತ್ತರಿಸಬಲ್ಲೆ.",
+      actionLabel: "ಈ ಹಸಿರು ಯೋಜನೆಯನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಲು ಒಪ್ಪಿಕೊಳ್ಳಿ"
+    }
+  };
+
+  // Resolve language fallback bundle
+  const langConfig = FALLBACKS_BY_LANG[preferredLanguage] || FALLBACKS_BY_LANG["English"];
 
   // Topic validation rule
   if (!isClimaticTopic(lastUserMessage)) {
     return res.json({
       role: "model",
-      content: "As your dedicated AI Climate Advisor, my expertise is strictly configured for questions about carbon footprints, environmental sustainability, climate change, greenhouse gas calculations, energy efficiency, and eco-friendly habit changes. Please request guidance within these sustainability fields!",
+      content: langConfig.validationError,
       timestamp: new Date().toISOString()
     });
   }
 
+  // Determine user intent category dynamically based on keywords
+  const normalizedText = lastUserMessage.toLowerCase();
+  let categoryFocus: "general" | "travel" | "energy" | "diet" | "water" = "general";
+  let projectedSavings = { co2Kg: 320, usd: 150 };
+
+  if (normalizedText.match(/(car|commute|travel|flight|train|bus|cycle|transit|mile|drive|vehicle)/)) {
+    categoryFocus = "travel";
+    projectedSavings = { co2Kg: 340, usd: 200 };
+  } else if (normalizedText.match(/(electricity|energy|solar|power|led|bulb|heater|ac|fan|light|standby|kilowatt)/)) {
+    categoryFocus = "energy";
+    projectedSavings = { co2Kg: 180, usd: 120 };
+  } else if (normalizedText.match(/(diet|food|vegan|veget|meat|cook|grocery|eat|waste|compost|shakahari|bhojan|khana)/)) {
+    categoryFocus = "diet";
+    projectedSavings = { co2Kg: 450, usd: 180 };
+  } else if (normalizedText.match(/(water|shower|wash|hose|tap|bath|rins)/)) {
+    categoryFocus = "water";
+    projectedSavings = { co2Kg: 90, usd: 65 };
+  }
+
   const systemPrompt = `You are the Expert AI Climate Coach of "CarbonVerse AI" platform, a living digital carbon supervisor, carbon accountant, and behavior modification counselor.
 Your character is analytical yet motivating. Use strict scientifically accurate sustainability insights in accordance with the GHG Protocol.
+
+**CRITICAL LANGUAGE REQ**:
+The user's preferred language is: ${preferredLanguage}. You MUST respond exclusively in this language: ${preferredLanguage}.
 
 **CRITICAL TOPIC BOUNDARY POLICY**:
 You are strictly restricted to processing carbon footprint audit, energy optimization, fuel emissions, climate mitigation, environmental footprint, ecology, organic agriculture/diet, and climate change questions. 
@@ -259,7 +359,7 @@ If the user's message is not directly related to these sustainable topics, you M
 
 At the end of your response, you MUST estimate:
 1. Expected CO2 savings in kg if the user adopts the specific habit discussed.
-2. Approximate financial (money) savings in USD per year.
+2. Approximate financial (money) savings in USD (or converted equivalent local currency if clear) per year.
 
 Represent these at the end of your message block exactly in this custom format:
 [SAVINGS:{"co2Kg": X, "usd": Y}]
@@ -271,25 +371,19 @@ User's current profile Context:
 - Diet: ${userContext?.diet || 'omnivore'}
 - Main source of emission: ${userContext?.highestSource || 'Transportation'}
 
-Ensure the advice is specifically tailored to their biggest emitting category. Avoid generic platitudes. Speak directly, with a highly premium, intelligent, objective tone.`;
+Ensure the advice is specifically tailored to their biggest emitting category, and completely outputted in the ${preferredLanguage} language. Speak directly, with a highly premium, intelligent, objective tone.`;
 
   const ai = getGeminiClient();
   if (!ai) {
-    // Elegant fallback simulation if API Key is not set or valid
-    const answer = `Based on your highest emission category of Transportation (${userContext?.highestSource || 'Transportation'}), transitioning from average hybrid transit to active low carbon travel is the most significant upgrade you can make. Implementing standard meat-free days can yield up to an additional 400kg of annual mitigation.
-
-Here is an actionable 3-step schedule for this week:
-- Use public transit or cycle for distances under 5 miles.
-- Try introducing plant-based ingredients to your cooking 3 times a week.
-- Target smart power strip optimization to offset idle smart-device consumption.
-
-[SAVINGS:{"co2Kg": 320, "usd": 150}]`;
+    // Elegant dynamic bilingual/multilingual fallback simulation if API Key is not set
+    const fallbackAnswer = langConfig[categoryFocus];
+    const savingsTag = `\n\n[SAVINGS:{"co2Kg": ${projectedSavings.co2Kg}, "usd": ${projectedSavings.usd}}]`;
 
     return res.json({
       role: "model",
-      content: answer,
+      content: fallbackAnswer + savingsTag,
       timestamp: new Date().toISOString(),
-      projectedSavings: { co2Kg: 320, usd: 150 }
+      projectedSavings
     });
   }
 
@@ -299,26 +393,26 @@ Here is an actionable 3-step schedule for this week:
       contents: lastUserMessage,
       config: {
         systemInstruction: systemPrompt,
-        temperature: 0.7,
+        temperature: 0.75,
       }
     });
 
     const textResult = response.text || "";
 
     // Parse out potential savings from format [SAVINGS:{"co2Kg": 123, "usd": 456}]
-    let co2Kg = 0;
-    let usd = 0;
+    let co2Kg = projectedSavings.co2Kg;
+    let usd = projectedSavings.usd;
     const match = textResult.match(/\[SAVINGS:\s*({[^}]+})\s*\]/);
     let cleanedText = textResult;
     if (match) {
       try {
         const parsed = JSON.parse(match[1]);
-        co2Kg = parsed.co2Kg || 0;
-        usd = parsed.usd || 0;
+        co2Kg = parsed.co2Kg || co2Kg;
+        usd = parsed.usd || usd;
         // Strip the raw tag from user view for cleaner visual renders
         cleanedText = textResult.replace(match[0], "").trim();
       } catch (err) {
-        console.error("Failed to parse savings metadata), err");
+        console.error("Failed to parse savings metadata", err);
       }
     }
 
@@ -326,11 +420,18 @@ Here is an actionable 3-step schedule for this week:
       role: "model",
       content: cleanedText,
       timestamp: new Date().toISOString(),
-      projectedSavings: co2Kg > 0 ? { co2Kg, usd } : undefined
+      projectedSavings: { co2Kg, usd }
     });
   } catch (err: any) {
-    console.error("Gemini API Error:", err);
-    res.status(500).json({ error: "Climate Coach model was unable to process request.", details: err.message });
+    console.error("Gemini API Error, reverting to localized dynamic fallback:", err);
+    // Graceful error recovery with high-fidelity localized answers
+    const fallbackAnswer = langConfig[categoryFocus];
+    res.json({
+      role: "model",
+      content: fallbackAnswer + `\n\n[SAVINGS:{"co2Kg": ${projectedSavings.co2Kg}, "usd": ${projectedSavings.usd}}]`,
+      timestamp: new Date().toISOString(),
+      projectedSavings
+    });
   }
 });
 

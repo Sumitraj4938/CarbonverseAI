@@ -18,6 +18,7 @@ import LoginLogo from './components/LoginLogo';
 import { CarbonProfile, CarbonCalculatorData, EmissionBreakdown, LeaderboardUser } from './types';
 import { loadUserCarbonData, saveUserCarbonData, supabase } from './lib/supabase';
 import LoginPage from './components/LoginPage';
+import FloatingAIHelper from './components/FloatingAIHelper';
 
 // Preset leaderboard profiles representing standard cohorts
 const INITIAL_LEADERBOARD: LeaderboardUser[] = [
@@ -462,6 +463,9 @@ export default function App() {
           <span className="flex items-center gap-1">Created for Environmental Hackathon <Sparkles className="w-3 h-3 text-carbon-primary" /></span>
         </div>
       </footer>
+
+      {/* Persistent Direct Access AI Helper Widget */}
+      <FloatingAIHelper userBreakdown={breakdown} />
     </div>
   );
 }

@@ -29,12 +29,18 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const isConfigured = !!supabase;
+  const [useSandbox, setUseSandbox] = useState(!isConfigured);
+
+  // Sync sandbox state when configuration helper loads
+  useEffect(() => {
+    setUseSandbox(!isConfigured);
+  }, [isConfigured]);
 
   // Cleanup messages on tab switch
   useEffect(() => {
     setErrorMessage(null);
     setSuccessMessage(null);
-  }, [isSignUp]);
+  }, [isSignUp, useSandbox]);
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +51,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
     const normalEmail = email.trim().toLowerCase();
 
     // 1. Live Supabase Authentication
-    if (isConfigured) {
+    if (isConfigured && !useSandbox) {
       try {
         if (isSignUp) {
           const { data, error } = await supabase!.auth.signUp({
@@ -65,7 +71,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
               setSuccessMessage("Account created successfully!");
               onLoginSuccess(data.session);
             } else {
-              setSuccessMessage("Sign up complete! Please check your email for a verification link.");
+              setSuccessMessage("Sign up complete! Please check your email for a verification link. (Or toggle back to 'Local Sandbox' above for instant registration bypass)");
             }
           }
         } else {
@@ -273,16 +279,76 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
             </p>
           </div>
 
+          {/* Connection Mode Toggle */}
+          <div className="flex bg-slate-950/60 p-1 rounded-xl border border-emerald-500/10 mb-4 select-none">
+            <button
+              type="button"
+              onClick={() => {
+                if (!isConfigured) {
+                  setErrorMessage("Supabase is not configured yet. Configure VITE_SUPABASE_URL & ANON_KEY in Secrets first, or use Sandbox Mode!");
+                  return;
+                }
+                setUseSandbox(false);
+              }}
+              className={`flex-1 py-1.5 rounded-lg text-[10px] font-mono tracking-wider font-bold uppercase transition-all ${
+                !useSandbox
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-[#0B130E] shadow bg-emerald-500'
+                  : 'text-slate-400 hover:text-slate-200 cursor-pointer'
+              } ${!isConfigured ? 'opacity-40 cursor-not-allowed' : ''}`}
+            >
+              Cloud (Supabase)
+            </button>
+            <button
+              type="button"
+              onClick={() => setUseSandbox(true)}
+              className={`flex-1 py-1.5 rounded-lg text-[10px] font-mono tracking-wider font-bold uppercase transition-all ${
+                useSandbox
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-[#0B130E] shadow bg-emerald-500'
+                  : 'text-slate-400 hover:text-slate-200 cursor-pointer'
+              }`}
+            >
+              Local Sandbox
+            </button>
+          </div>
+
           {/* Sandbox alert detail box */}
-          {!isConfigured && (
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-3.5 mb-5 text-[11px] leading-relaxed text-slate-300">
+          {useSandbox && (
+            <div className="bg-emerald-500/10 border border-emerald-500/15 rounded-2xl p-3 mb-4 text-[11px] leading-relaxed text-slate-300">
               <div className="flex items-center gap-2 font-bold font-mono text-emerald-400 mb-0.5">
                 <Sparkles className="w-3.5 h-3.5 flex-shrink-0 text-emerald-400 animate-pulse" />
-                <span>SANDBOX MODE ACTIVE</span>
+                <span>LOCAL SANDBOX ENGINE ACTIVE</span>
               </div>
               <p className="text-slate-400 text-[10px]">
-                Create a simulated account or sign in with any mock email to explore the portal instantly.
+                Create any simulated account below instantly. Zero delays, no database set up or email verification required.
               </p>
+            </div>
+          )}
+
+          {/* 1-Click Sandbox Fill */}
+          {useSandbox && !isSignUp && (
+            <div className="bg-slate-950/65 border border-emerald-500/10 rounded-2xl p-3 mb-4 text-left font-sans">
+              <div className="text-[9px] font-mono text-emerald-400 font-bold uppercase tracking-wider mb-2 flex items-center justify-between">
+                <span>Demo Profile (Instant Sign In)</span>
+                <span className="px-1.5 py-0.5 bg-emerald-500/10 rounded text-[8px] text-emerald-400 font-bold font-mono">1-CLICK</span>
+              </div>
+              <div className="flex items-center justify-between gap-3 bg-[#0B130E]/60 border border-emerald-500/5 rounded-xl p-2.5">
+                <div className="font-mono text-[10px] text-slate-300 space-y-0.5">
+                  <p className="truncate"><span className="text-slate-500">Email:</span> rajsumit202425@gmail.com</p>
+                  <p><span className="text-slate-500">Pass:</span> sumit1234</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('rajsumit202425@gmail.com');
+                    setPassword('sumit1234');
+                    setErrorMessage(null);
+                    setSuccessMessage("Demo credentials loaded! Press 'Access Portal Dashboard' below.");
+                  }}
+                  className="px-2.5 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/20 rounded-lg text-[9px] font-bold tracking-wider font-mono uppercase transition-all cursor-pointer active:scale-95"
+                >
+                  Autofill
+                </button>
+              </div>
             </div>
           )}
 
