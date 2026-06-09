@@ -11,7 +11,7 @@ import ReceiptScannerSection from './components/ReceiptScannerSection';
 import RoutePlannerSection from './components/RoutePlannerSection';
 import QuestsSection from './components/QuestsSection';
 import MarketplaceSection from './components/MarketplaceSection';
-import ExtraControlsDrawer, { FolderID } from './components/ExtraControlsDrawer';
+import ExtraControlsDrawer from './components/ExtraControlsDrawer';
 import { CarbonProfile, CarbonCalculatorData, EmissionBreakdown, LeaderboardUser } from './types';
 import { loadUserCarbonData, saveUserCarbonData } from './lib/supabase';
 
@@ -64,7 +64,6 @@ export default function App() {
   const [supabaseUserId, setSupabaseUserId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [isExtraDrawerOpen, setIsExtraDrawerOpen] = useState(false);
-  const [drawerDefaultFolder, setDrawerDefaultFolder] = useState<FolderID>('root');
 
   // Authenticated state handler - loads user accounts or clones local metrics to Postgres
   const handleSessionChange = async (session: any) => {
@@ -207,26 +206,18 @@ export default function App() {
         <LandingPage 
           onStart={() => setInPortal(true)} 
           leaderboard={leaderboard} 
-          onOpenExtraDrawer={() => {
-            setDrawerDefaultFolder('root');
-            setIsExtraDrawerOpen(true);
-          }} 
-          onOpenCloudIdentity={() => {
-            setDrawerDefaultFolder('cloud_sync');
-            setIsExtraDrawerOpen(true);
-          }}
+          onOpenExtraDrawer={() => setIsExtraDrawerOpen(true)} 
+          onOpenCloudIdentity={() => setIsExtraDrawerOpen(true)}
           userEmail={supabaseSession?.user?.email || null}
         />
         {/* Extra Controls Drawer */}
         <ExtraControlsDrawer
           isOpen={isExtraDrawerOpen}
           onClose={() => setIsExtraDrawerOpen(false)}
-          leaderboard={leaderboard}
           onSessionChange={handleSessionChange}
           supabaseUserId={supabaseUserId}
           onSyncRequest={handleSyncRequest}
           syncing={syncing}
-          defaultFolder={drawerDefaultFolder}
         />
       </div>
     );
@@ -272,12 +263,10 @@ export default function App() {
       <ExtraControlsDrawer
         isOpen={isExtraDrawerOpen}
         onClose={() => setIsExtraDrawerOpen(false)}
-        leaderboard={leaderboard}
         onSessionChange={handleSessionChange}
         supabaseUserId={supabaseUserId}
         onSyncRequest={handleSyncRequest}
         syncing={syncing}
-        defaultFolder={drawerDefaultFolder}
       />
 
       {/* Main Header bar */}
@@ -330,10 +319,7 @@ export default function App() {
             {/* Cloud Storage Account Connector button */}
             <button
               id="top-header-cloud-btn"
-              onClick={() => {
-                setDrawerDefaultFolder('cloud_sync');
-                setIsExtraDrawerOpen(true);
-              }}
+              onClick={() => setIsExtraDrawerOpen(true)}
               className={`flex items-center gap-2 px-3.5 py-1.5 border rounded-lg font-medium transition-all cursor-pointer ${
                 supabaseUserId 
                   ? 'border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/25 text-emerald-400' 
@@ -351,7 +337,6 @@ export default function App() {
             <button
               id="top-header-workspace-btn"
               onClick={() => {
-                setDrawerDefaultFolder('root');
                 setIsExtraDrawerOpen(true);
               }}
               className="flex items-center gap-2 px-3.5 py-1.5 border border-slate-800 bg-white/5 hover:bg-white/10 rounded-lg text-slate-300 font-medium transition-all cursor-pointer"
