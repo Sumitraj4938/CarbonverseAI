@@ -4,6 +4,7 @@ import {
   ArrowRight, Users, Flame, ExternalLink, Leaf, FolderOpen, Cloud, User
 } from 'lucide-react';
 import Logo from './Logo';
+import LoginLogo from './LoginLogo';
 import { LeaderboardUser } from '../types';
 
 interface LandingPageProps {
@@ -41,10 +42,10 @@ export default function LandingPage({ onStart, leaderboard, onOpenExtraDrawer, o
           <button
             id="landing-cloud-auth-btn"
             onClick={onOpenCloudIdentity}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-900/90 hover:bg-slate-950 border border-indigo-500/40 hover:border-indigo-400 rounded-xl text-indigo-300 font-mono text-xs font-bold shadow-2xl shadow-indigo-500/10 cursor-pointer transition-all hover:scale-105 active:scale-95 group"
+            className="flex items-center gap-2.5 px-4 py-2.5 bg-slate-900/90 hover:bg-slate-950 border border-indigo-500/40 hover:border-indigo-400 rounded-xl text-indigo-300 font-mono text-xs font-bold shadow-2xl shadow-indigo-500/10 cursor-pointer transition-all hover:scale-105 active:scale-95 group"
             title="Access Cloud Authentication Account"
           >
-            <Cloud className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
+            <LoginLogo size="20" className="group-hover:scale-110 transition-transform" />
             {userEmail ? (
               <span className="text-emerald-400 max-w-[120px] sm:max-w-none truncate">
                 SYNCED: {userEmail.split('@')[0]}

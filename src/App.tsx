@@ -13,6 +13,7 @@ import QuestsSection from './components/QuestsSection';
 import MarketplaceSection from './components/MarketplaceSection';
 import ExtraControlsDrawer from './components/ExtraControlsDrawer';
 import Logo from './components/Logo';
+import LoginLogo from './components/LoginLogo';
 import { CarbonProfile, CarbonCalculatorData, EmissionBreakdown, LeaderboardUser } from './types';
 import { loadUserCarbonData, saveUserCarbonData } from './lib/supabase';
 
@@ -316,21 +317,21 @@ export default function App() {
 
             {/* Cloud Storage Account Connector button */}
             <button
-              id="top-header-cloud-btn"
-              onClick={() => setIsExtraDrawerOpen(true)}
-              className={`flex items-center gap-2 px-3.5 py-1.5 border rounded-lg font-medium transition-all cursor-pointer ${
-                supabaseUserId 
-                  ? 'border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/25 text-emerald-400' 
-                  : 'border-indigo-500/30 bg-indigo-500/15 hover:bg-indigo-500/30 text-indigo-300 shadow-lg shadow-indigo-500/5 animate-pulse'
-              }`}
-            >
-              <Cloud className="w-3.5 h-3.5" />
-              {supabaseUserId ? (
-                <span className="hidden sm:inline">Synced Profile</span>
-              ) : (
-                <span className="hidden sm:inline">Connect Cloud DB</span>
-              )}
-            </button>
+               id="top-header-cloud-btn"
+               onClick={() => setIsExtraDrawerOpen(true)}
+               className={`flex items-center gap-2 px-3.5 py-1.5 border rounded-lg font-medium transition-all cursor-pointer ${
+                 supabaseUserId 
+                   ? 'border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/25 text-emerald-400' 
+                   : 'border-indigo-500/30 bg-indigo-500/15 hover:bg-indigo-500/30 text-indigo-300 shadow-lg shadow-indigo-500/5 animate-pulse'
+               }`}
+             >
+               <LoginLogo size="16" />
+               {supabaseUserId ? (
+                 <span className="hidden sm:inline">Synced Profile</span>
+               ) : (
+                 <span className="hidden sm:inline">Create Account / Login</span>
+               )}
+             </button>
 
             <button
               id="top-header-workspace-btn"
