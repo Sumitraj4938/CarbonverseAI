@@ -98,6 +98,12 @@ export default function LandingPage({ onStart, leaderboard, onOpenExtraDrawer, o
               Watch Technical Demo
             </a>
           </div>
+
+          {/* Developer credit badge */}
+          <div className="pt-4 flex items-center gap-2.5 text-xs text-slate-500 font-mono">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Developer Lead: <strong className="text-emerald-400">Sumit Raj (IITian)</strong> • Senior Environmental Solutions Architect</span>
+          </div>
         </div>
 
         {/* Hero Image / Animated Earth Virtual Globe Component */}

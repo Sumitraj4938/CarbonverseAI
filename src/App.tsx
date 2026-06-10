@@ -414,7 +414,7 @@ export default function App() {
       {/* Small design credit floating index */}
       <footer className="border-t border-slate-900 mt-20 bg-slate-950/30 py-6 text-center text-slate-600 text-xs font-mono">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
-          <span>CarbonSteps Dashboard / ISO 14064 Standard Environmental Compliances</span>
+          <span>CarbonSteps Dashboard / ISO 14064 Standard Environmental Compliances / Developer: <strong className="text-[#10B981] font-bold">Sumit Raj (IITian)</strong></span>
           <span className="flex items-center gap-1">Created for Environmental Hackathon <Sparkles className="w-3 h-3 text-carbon-primary" /></span>
         </div>
       </footer>
