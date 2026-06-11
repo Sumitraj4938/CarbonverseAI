@@ -106,4 +106,38 @@ describe('CoachSection Component (AI Climate Coach)', () => {
 
     vi.unstubAllGlobals();
   });
+
+  it('handles diet, electricity and fallback keywords in offline simulation', async () => {
+    const mockFetch = vi.fn().mockRejectedValue(new Error('Network offline'));
+    vi.stubGlobal('fetch', mockFetch);
+
+    render(<CoachSection userBreakdown={mockBreakdown} />);
+    
+    // Diet keyword
+    let input = screen.getByPlaceholderText(/Ask AI Coach/i);
+    fireEvent.change(input, { target: { value: 'How about vegan diet?' } });
+    fireEvent.click(document.querySelector('button[type="submit"]')!);
+
+    await waitFor(() => {
+      expect(screen.getByText(/vegetarian options just 4 days a week reduces dietary footprint/i)).not.toBeNull();
+    }, { timeout: 1500 });
+    
+    // Electricity keyword
+    fireEvent.change(input, { target: { value: 'solar power' } });
+    fireEvent.click(document.querySelector('button[type="submit"]')!);
+
+    await waitFor(() => {
+      expect(screen.getByText(/optimizing thermostats by 2 degrees Celsius/i)).not.toBeNull();
+    }, { timeout: 1500 });
+
+    // Unknown fallback keyword
+    fireEvent.change(input, { target: { value: 'something else unknown' } });
+    fireEvent.click(document.querySelector('button[type="submit"]')!);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Climate action starts with minor everyday switches/i)).not.toBeNull();
+    }, { timeout: 1500 });
+
+    vi.unstubAllGlobals();
+  });
 });

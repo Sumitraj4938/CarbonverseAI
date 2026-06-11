@@ -36,4 +36,30 @@ describe('RoutePlannerSection Component', () => {
     expect(screen.getAllByText('Active Direct Greenway Path')).toBeDefined();
     expect(screen.getAllByText('Zero Footprint').length).toBeGreaterThan(0);
   });
+
+  it('renders successfully fetched API routes', async () => {
+    globalFetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        { name: "Super Train", mode: "transit", distanceKm: 200, durationMin: 120, co2EmissionsKg: 5, isEcoChoice: true, savingsVsDriverKg: 40 },
+        { name: "Walk The Earth", mode: "walking", distanceKm: 5, durationMin: 60, co2EmissionsKg: 0, isEcoChoice: true, savingsVsDriverKg: 2 },
+        { name: "Bike The Town", mode: "biking", distanceKm: 15, durationMin: 45, co2EmissionsKg: 0, isEcoChoice: true, savingsVsDriverKg: 4 },
+        { name: "Drive The Car", mode: "unknown", distanceKm: 20, durationMin: 20, co2EmissionsKg: 20, isEcoChoice: false, savingsVsDriverKg: 0 },
+      ]
+    });
+
+    render(<RoutePlannerSection />);
+    const inputs = screen.getAllByRole('textbox');
+    fireEvent.change(inputs[0], { target: { value: 'SFO' } });
+    fireEvent.change(inputs[1], { target: { value: 'SJC' } });
+
+    fireEvent.click(screen.getByText('Resolve Eco Commute'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Super Train')).not.toBeNull();
+    });
+    expect(screen.getByText('Walk The Earth')).not.toBeNull();
+    expect(screen.getByText('Bike The Town')).not.toBeNull();
+    expect(screen.getByText('Drive The Car')).not.toBeNull();
+  });
 });

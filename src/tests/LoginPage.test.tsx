@@ -93,4 +93,37 @@ describe('LoginPage Component (Authentication Flow)', () => {
 
     vi.unstubAllGlobals();
   });
+
+  it('handles sign up offline fallback simulation', async () => {
+    const { container } = render(<LoginPage onLoginSuccess={mockOnLoginSuccess} />);
+    
+    // Switch to Sign Up
+    fireEvent.click(screen.getByText(/Don't have an environmental profile yet\?/i).closest('button')!);
+
+    const nameInput = screen.getByPlaceholderText('Full Name (e.g. Raj Sumit)');
+    const emailInput = screen.getByPlaceholderText('Email Address');
+    const pwdInput = screen.getByPlaceholderText('Secure Password (min. 6 characters)') as HTMLInputElement;
+    const signUpButton = container.querySelector('button[type="submit"]');
+
+    fireEvent.change(nameInput, { target: { value: 'New Eco' } });
+    fireEvent.change(emailInput, { target: { value: 'new@earth.org' } });
+    fireEvent.change(pwdInput, { target: { value: 'password123' } });
+    
+    // Test showing password
+    expect(pwdInput.type).toBe('password');
+    const togglePassBtn = screen.getByLabelText('Show password');
+    fireEvent.click(togglePassBtn);
+    expect(pwdInput.type).toBe('text');
+    fireEvent.click(screen.getByLabelText('Hide password'));
+    expect(pwdInput.type).toBe('password');
+
+    fireEvent.click(signUpButton!);
+
+    const successMsg = await screen.findByText('Account created successfully!');
+    expect(successMsg).not.toBeNull();
+
+    await waitFor(() => {
+      expect(mockOnLoginSuccess).toHaveBeenCalled();
+    });
+  });
 });

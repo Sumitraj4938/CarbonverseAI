@@ -77,4 +77,52 @@ describe('TwinSection Component (Carbon Twin & Habit Simulator)', () => {
     // Active transit (140) + electric grid offset (110) = 250 kg/mo. Yearly = 3000 kg CO2.
     expect(screen.getByText('3,000')).not.toBeNull();
   });
+
+  it('renders different avatar moods based on carbon score', () => {
+    const lowScore = {
+      transportation: 1000,
+      electricity: 1000,
+      food: 1000,
+      shopping: 1000,
+      water: 1000,
+      total: 5000,
+      carbonScore: 40 // Very low score
+    };
+    const { unmount } = render(
+      <TwinSection 
+        userBreakdown={lowScore}
+        onSessionChange={mockOnSessionChange} 
+        supabaseUserId={null} 
+        onSyncRequest={mockOnSyncRequest} 
+        syncing={false} 
+      />
+    );
+    expect(screen.getByText('Carbon Scorched')).not.toBeNull();
+    unmount();
+
+    const midScore = { ...lowScore, carbonScore: 65 };
+    const { unmount: unmount2 } = render(
+      <TwinSection 
+        userBreakdown={midScore}
+        onSessionChange={mockOnSessionChange} 
+        supabaseUserId={null} 
+        onSyncRequest={mockOnSyncRequest} 
+        syncing={false} 
+      />
+    );
+    expect(screen.getByText('Deciduous Seedling')).not.toBeNull();
+    unmount2();
+
+    const topScore = { ...lowScore, carbonScore: 90 };
+    render(
+      <TwinSection 
+        userBreakdown={topScore}
+        onSessionChange={mockOnSessionChange} 
+        supabaseUserId={null} 
+        onSyncRequest={mockOnSyncRequest} 
+        syncing={false} 
+      />
+    );
+    expect(screen.getByText('Atmospheric Guardian')).not.toBeNull();
+  });
 });

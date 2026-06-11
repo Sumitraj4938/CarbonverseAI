@@ -9,7 +9,10 @@ describe('MarketplaceSection Component', () => {
     expect(screen.getByText('Acre Amazonian Rainforest Reforestation')).not.toBeNull();
   });
 
-  it('can switch between tabs successfully', () => {
+  it('can switch between tabs successfully and click product details', () => {
+    const alertMock = vi.fn();
+    vi.stubGlobal('alert', alertMock);
+
     render(<MarketplaceSection />);
     
     // Switch to products
@@ -18,6 +21,13 @@ describe('MarketplaceSection Component', () => {
 
     // Assert products are visible
     expect(screen.getByText('Smart Wi-Fi Power Strip Optimizer')).not.toBeNull();
+    
+    // Click Details
+    const detailsLinks = screen.getAllByText('Details');
+    fireEvent.click(detailsLinks[0]);
+
+    expect(alertMock).toHaveBeenCalled();
+    vi.unstubAllGlobals();
     
     // Offsets shouldn't be visible
     expect(screen.queryByText('Acre Amazonian Rainforest Reforestation')).toBeNull();

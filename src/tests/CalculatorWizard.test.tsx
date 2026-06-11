@@ -42,14 +42,41 @@ describe('CalculatorWizard Component', () => {
     expect(screen.getByText('Commute Miles per Week (Conventional Travel):')).not.toBeNull();
   });
 
-  it('handles custom sliders and input validation', () => {
-    const { container } = render(<CalculatorWizard onCalculationComplete={mockOnCalculationComplete} currentData={sampleData} />);
-    
-    const slider = container.querySelector('input[type="range"]');
-    expect(slider).not.toBeNull();
-    
-    fireEvent.change(slider!, { target: { value: '200' } });
-    expect(screen.getByText('200 mi')).not.toBeNull();
+  it('handles full form progression and edits all fields locally', () => {
+    render(<CalculatorWizard onCalculationComplete={mockOnCalculationComplete} currentData={sampleData} />);
+
+    // Step 0 changes
+    fireEvent.change(screen.getByLabelText('Fuel or Engine Type:'), { target: { value: 'electric' } });
+    fireEvent.change(screen.getByLabelText('Flights (Medium/Long range per year):'), { target: { value: '5' } });
+    fireEvent.change(screen.getByLabelText(/Public Transit/), { target: { value: '10' } });
+
+    fireEvent.click(screen.getByText('Next Category'));
+
+    // Step 1 changes
+    fireEvent.change(screen.getByLabelText(/Monthly Electricity Consumption:/), { target: { value: '250' } });
+    expect(screen.getByText('250 kWh')).not.toBeNull();
+    fireEvent.change(screen.getByLabelText(/Renewable Energy Share/), { target: { value: '0.8' } });
+    fireEvent.click(screen.getByText('Next Category'));
+
+    // Step 2 changes
+    fireEvent.click(screen.getByRole('radio', { name: 'Vegan: No animal products' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Veg: Dairy but no meat' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Pesca: Fish and greens' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'High Meat: Rich in red beef' }));
+    fireEvent.change(screen.getByLabelText(/Food Waste frequency score/), { target: { value: '8' } });
+    fireEvent.click(screen.getByText('Next Category'));
+
+    // Step 3 changes
+    fireEvent.change(screen.getByLabelText(/Textiles & Apparel/i), { target: { value: '120' } });
+    fireEvent.change(screen.getByLabelText(/Electronics devices/i), { target: { value: '300' } });
+    fireEvent.change(screen.getByLabelText(/General household goods/i), { target: { value: '80' } });
+    fireEvent.click(screen.getByText('Next Category'));
+
+    // Step 4 changes
+    fireEvent.change(screen.getByLabelText(/Daily average Shower duration:/), { target: { value: '5' } });
+    fireEvent.change(screen.getByLabelText(/Washing appliances run weekly/), { target: { value: '2' } });
+
+    expect(screen.getByText('Sync Carbon Twin')).not.toBeNull();
   });
 
   it('submits calculations successfully using fetch endpoint or backup logic', async () => {

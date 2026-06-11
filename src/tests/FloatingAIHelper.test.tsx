@@ -41,7 +41,7 @@ describe('FloatingAIHelper Component', () => {
     render(<FloatingAIHelper />);
     
     // Open chat
-    const button = screen.getByRole('button');
+    const button = screen.getByRole('button', { name: "Open AI Helper" });
     fireEvent.click(button);
 
     // Wait for input
@@ -59,5 +59,76 @@ describe('FloatingAIHelper Component', () => {
     await waitFor(() => {
       expect(screen.getByText(/Switching routes under 5 miles to cycling saves up to/i)).not.toBeNull();
     }, { timeout: 1500 });
+  });
+
+  it('handles electricity and fallback keywords', async () => {
+    globalFetchMock.mockRejectedValue(new Error('Offline')); // Trigger fallback
+    render(<FloatingAIHelper />);
+    
+    fireEvent.click(screen.getByRole('button', { name: "Open AI Helper" }));
+
+    const input = await screen.findByPlaceholderText(/Type your query/i);
+    
+    // Electricity
+    fireEvent.change(input, { target: { value: 'led bulb' } });
+    fireEvent.click(screen.getByLabelText("Send message"));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Using 5-Star rated appliances and smart LEDs offsets/i)).not.toBeNull();
+    }, { timeout: 1500 });
+
+    // Diet
+    fireEvent.change(input, { target: { value: 'vegan diet' } });
+    fireEvent.click(screen.getByLabelText("Send message"));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Minimizing food waste and switching to a plant-forward diet/i)).not.toBeNull();
+    }, { timeout: 1500 });
+
+    // Fallback
+    fireEvent.change(input, { target: { value: 'hello' } });
+    fireEvent.click(screen.getByLabelText("Send message"));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Opt for green choices:/i)).not.toBeNull();
+    }, { timeout: 1500 });
+  });
+
+  it('can switch language', async () => {
+    render(<FloatingAIHelper />);
+    fireEvent.click(screen.getByRole('button', { name: "Open AI Helper" }));
+
+    const sel = screen.getByRole('combobox');
+    fireEvent.change(sel, { target: { value: 'Hindi' } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/नमस्ते अग्रणी/i)).not.toBeNull();
+    });
+  });
+
+  it('can send a message and handle successful fetch response and suggested questions', async () => {
+    globalFetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        id: 'bot_reply_success',
+        role: 'model',
+        content: 'This is a successful response.',
+        projectedSavings: { co2Kg: 5, usd: 2 },
+        timestamp: new Date().toISOString()
+      })
+    });
+    render(<FloatingAIHelper />);
+    
+    // Open chat
+    fireEvent.click(screen.getByRole('button', { name: "Open AI Helper" }));
+
+    // Click suggested 
+    const suggestBtn = screen.getByText('How do I recycle electronic waste?');
+    fireEvent.click(suggestBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('This is a successful response.')).not.toBeNull();
+      expect(screen.getByText('+5kg CO₂')).not.toBeNull();
+    });
   });
 });

@@ -315,6 +315,7 @@ export default function FloatingAIHelper({ userBreakdown }: FloatingAIHelperProp
 
                 <button
                   onClick={() => setIsOpen(false)}
+                  aria-label="Close"
                   className="p-1 px-[5px] text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-all cursor-pointer"
                 >
                   <X className="w-4 h-4" />
@@ -401,6 +402,7 @@ export default function FloatingAIHelper({ userBreakdown }: FloatingAIHelperProp
               />
               <button
                 type="submit"
+                aria-label="Send message"
                 disabled={!input.trim() || loading}
                 className="p-2.5 bg-gradient-to-r from-emerald-550 to-teal-450 hover:brightness-110 text-slate-950 font-bold rounded-xl flex items-center justify-center transition-all disabled:opacity-30 cursor-pointer"
               >
@@ -413,6 +415,7 @@ export default function FloatingAIHelper({ userBreakdown }: FloatingAIHelperProp
 
       {/* Floating Sparkles Toggle Button icon */}
       <motion.button
+        aria-label={isOpen ? "Close AI Helper" : "Open AI Helper"}
         onClick={() => setIsOpen(!isOpen)}
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.94 }}

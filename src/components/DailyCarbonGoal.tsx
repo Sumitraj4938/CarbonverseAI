@@ -104,6 +104,7 @@ export default function DailyCarbonGoal({ baseAnnual, monthlySavings }: DailyCar
           <div className="flex items-center gap-1" id="daily-goal-controls">
             <button 
               id="btn-decrease-daily-target"
+              aria-label="Decrease Target"
               onClick={() => setDailyTarget(prev => Math.max(4, prev - 1))}
               className="w-5 h-5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center text-xs text-slate-400 cursor-pointer transition-colors"
               title="Decrease Goal"
@@ -113,6 +114,7 @@ export default function DailyCarbonGoal({ baseAnnual, monthlySavings }: DailyCar
             <span className="text-[10px] font-mono text-slate-200 font-bold px-1.5" id="daily-target-display">{dailyTarget.toFixed(0)} kg CO₂</span>
             <button 
               id="btn-increase-daily-target"
+              aria-label="Increase Target"
               onClick={() => setDailyTarget(prev => Math.min(30, prev + 1))}
               className="w-5 h-5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center text-xs text-slate-400 cursor-pointer transition-colors"
               title="Increase Goal"
