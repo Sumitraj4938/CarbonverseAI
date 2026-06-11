@@ -7,11 +7,7 @@ const supabaseAnonKey = metaEnv.VITE_SUPABASE_ANON_KEY || '';
 
 // Initialize client. If keys are missing, we gracefully handle null so the app runs smoothly
 export const supabase = supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        fetch: (...args) => fetch(...args),
-      },
-    })
+  ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
 /**
