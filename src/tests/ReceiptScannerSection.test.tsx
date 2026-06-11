@@ -112,4 +112,63 @@ describe('AI Carbon Receipt Scanner Component', () => {
     // Verify saving counter appears prominently
     expect(screen.getByText(/Saved 14.7kg/i)).not.toBeNull();
   });
+
+  it('handles paste receipt logs analysis fallback when offline', async () => {
+    globalFetchMock.mockRejectedValueOnce(new Error('Offline'));
+    render(<ReceiptScannerSection />);
+    const textarea = screen.getByPlaceholderText(/e.g. WHOLE FOODS:/i);
+    fireEvent.change(textarea, { target: { value: "WHOLE FOODS: Sirloin Beef Steak $24.99, Almond Milk $3.50" } });
+    fireEvent.click(screen.getByRole('button', { name: /Scan Carbon Receipt/i }));
+    
+    expect(await screen.findByText(/AI model was temporarily unavailable/)).not.toBeNull();
+    // It should also render the fallback scanner state
+    expect(await screen.findByText('24.2')).not.toBeNull();
+
+    // Click quick reset to scan another
+    fireEvent.click(screen.getByText('Scan Another Receipt'));
+    expect(screen.getByText('Awaiting Environmental Auditor Input')).not.toBeNull();
+  });
+
+  it('handles drag and drop and file input', () => {
+    render(<ReceiptScannerSection />);
+
+    const dropzone = screen.getByLabelText(/Upload shopping receipt. Supports PNG, JPG, and WEBP. Drag and drop file here or click to browse./);
+    fireEvent.dragEnter(dropzone);
+    expect(screen.getByText('Drop receipt here!')).not.toBeNull();
+    fireEvent.dragLeave(dropzone);
+    expect(screen.getByText('Upload Receipt Image')).not.toBeNull();
+
+    // Invalid file
+    const invalidFile = new File(['hello'], 'hello.txt', { type: 'text/plain' });
+    fireEvent.drop(dropzone, {
+      dataTransfer: { files: [invalidFile] }
+    });
+    expect(screen.getByText(/Unsupported file format/)).not.toBeNull();
+    
+    // Valid file
+    const validFile = new File(['dummy'], 'receipt.png', { type: 'image/png' });
+    // mock readAsDataURL
+    const readAsDataURLMock = vi.fn();
+    global.FileReader = class {
+      onload: any;
+      readAsDataURL = readAsDataURLMock.mockImplementation(function(this: any) {
+        this.result = 'data:image/png;base64,dummybase64';
+        this.onload();
+      });
+    } as any;
+    
+    const fileInput = document.querySelector('input[type="file"]')!;
+    fireEvent.change(fileInput, { target: { files: [validFile] } });
+    
+    expect(globalFetchMock).toHaveBeenCalled();
+  });
+
+  it('can trigger quick test datasets', async () => {
+    globalFetchMock.mockRejectedValueOnce(new Error('Offline'));
+    render(<ReceiptScannerSection />);
+    const sampleBtn = screen.getByRole('button', { name: /Load sample dataset: Whole Foods Premium Grocery/i });
+    fireEvent.click(sampleBtn);
+
+    expect(await screen.findByText(/AI model was temporarily unavailable/)).not.toBeNull();
+  });
 });

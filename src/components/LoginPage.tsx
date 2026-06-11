@@ -8,8 +8,10 @@ import { supabase } from '../lib/supabase';
 import Logo from './Logo';
 import LoginLogo from './LoginLogo';
 
+import { Session } from '@supabase/supabase-js';
+
 interface LoginPageProps {
-  onLoginSuccess: (session: any) => void;
+  onLoginSuccess: (session: Session | null) => void;
   initialEmail?: string;
 }
 
@@ -58,7 +60,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
               display_name: name.trim() || 'Eco Pioneer'
             }
           }
-        });
+        } as unknown as Session);
       }, 500);
       return;
     }
@@ -98,8 +100,8 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
           onLoginSuccess(data.session);
         }
       }
-    } catch (err: any) {
-      setErrorMessage(err.message || "Authentication failed. Check your network, email, or secure credentials.");
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : "Authentication failed. Check your network, email, or secure credentials.");
     } finally {
       setAuthLoading(false);
     }

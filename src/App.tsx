@@ -12,6 +12,7 @@ import { CarbonProfile, CarbonCalculatorData, EmissionBreakdown, LeaderboardUser
 import { loadUserCarbonData, saveUserCarbonData, supabase } from './lib/supabase';
 import FloatingAIHelper from './components/FloatingAIHelper';
 import ErrorBoundary from './components/ErrorBoundary';
+import { Session } from '@supabase/supabase-js';
 import MultiStageSkeleton from './components/MultiStageSkeleton';
 
 // Code splitting and lazy loading of section components (Lighthouse 95+)
@@ -69,7 +70,7 @@ export default function App() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>(INITIAL_LEADERBOARD);
 
   // Supabase Integration States
-  const [supabaseSession, setSupabaseSession] = useState<any>(null);
+  const [supabaseSession, setSupabaseSession] = useState<Session | null>(null);
   const [supabaseUserId, setSupabaseUserId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [isExtraDrawerOpen, setIsExtraDrawerOpen] = useState(false);
@@ -80,12 +81,12 @@ export default function App() {
   };
 
   // Helper save function that upserts live Supabase profile
-  const saveData = async (uId: string, name: string, prof: any, calc: any, breakd: any) => {
+  const saveData = async (uId: string, name: string, prof: CarbonProfile, calc: CarbonCalculatorData, breakd: EmissionBreakdown) => {
     return await saveUserCarbonData(uId, name, prof, calc, breakd);
   };
 
   // Authenticated state handler - loads user accounts or clones local metrics to Postgres
-  const handleSessionChange = async (session: any) => {
+  const handleSessionChange = async (session: Session | null) => {
     setSupabaseSession(session);
     if (session?.user) {
       const uId = session.user.id;
@@ -99,7 +100,7 @@ export default function App() {
             ...prev,
             id: cloudData.id,
             name: cloudData.name,
-            level: cloudData.level as any,
+            level: cloudData.level as CarbonProfile['level'],
             xp: cloudData.xp,
             greenPoints: cloudData.green_points,
             streak: cloudData.streak
@@ -366,7 +367,7 @@ export default function App() {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as 'twin' | 'calculator' | 'coach' | 'receipt' | 'routes' | 'quests' | 'marketplace')}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold tracking-wide font-display transition-all whitespace-nowrap cursor-pointer ${
                   isActive 
                     ? 'bg-gradient-to-r from-carbon-primary to-carbon-secondary text-carbon-dark shadow-md shadow-carbon-primary/10 font-bold' 

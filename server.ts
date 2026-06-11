@@ -341,7 +341,7 @@ function isClimaticTopic(text: string): boolean {
 // -------------------------------------------------------------
 // High-Fidelity Multi-Language Dynamic Feedback Engine
 // -------------------------------------------------------------
-function getSmartFallbackResponse(query: string, language: string, context?: any): string {
+function getSmartFallbackResponse(query: string, language: string, context?: Record<string, unknown>): string {
   const normalized = query.toLowerCase().trim();
   const name = context?.name || "Pioneer";
   
@@ -675,7 +675,7 @@ Ensure the advice is specifically tailored to their biggest emitting category, a
 
   try {
     // Format full conversational message history using current @google/genai syntax schema
-    const formattedHistory = (messages || []).map((msg: any) => ({
+    const formattedHistory = (messages || []).map((msg: { role: string; content: string }) => ({
       role: msg.role === "user" ? "user" : "model",
       parts: [{ text: msg.content }]
     }));
@@ -721,7 +721,7 @@ Ensure the advice is specifically tailored to their biggest emitting category, a
       timestamp: new Date().toISOString(),
       projectedSavings: { co2Kg, usd }
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Gemini API Error, reverting to localized dynamic fallback:", err);
     const fallbackAnswer = getSmartFallbackResponse(lastUserMessage, preferredLanguage, userContext);
     res.json({
@@ -829,9 +829,9 @@ You MUST respond strictly in valid minified JSON format fitting this exact schem
         resultObj.sustainabilityScore = Math.max(5, Math.round(100 - (resultObj.totalReceiptCO2Kg * 3)));
       }
       if (Array.isArray(resultObj.scannedItems)) {
-        resultObj.scannedItems = resultObj.scannedItems.map((item: any) => {
+        resultObj.scannedItems = resultObj.scannedItems.map((item: Record<string, unknown>) => {
           if (typeof item.alternativeCo2Kg !== 'number') {
-            item.alternativeCo2Kg = item.rating === 'Green' ? item.co2Kg : Math.round((item.co2Kg * 0.2) * 10) / 10;
+            item.alternativeCo2Kg = item.rating === 'Green' ? Number(item.co2Kg) : Math.round((Number(item.co2Kg) * 0.2) * 10) / 10;
           }
           return item;
         });
@@ -841,9 +841,10 @@ You MUST respond strictly in valid minified JSON format fitting this exact schem
       console.error("Receipt parsing error for:", response.text);
       res.status(500).json({ error: "Unable to parse scanned carbon breakdown from receipt", modelOutput: response.text });
     }
-  } catch (err: any) {
-    console.error("Gemini receipt error:", err);
-    res.status(500).json({ error: "Failed to scan receipt carbon impact.", details: err.message });
+  } catch (err: unknown) {
+    const errorDetails = err instanceof Error ? err.message : String(err);
+    console.error("Gemini receipt error:", errorDetails);
+    res.status(500).json({ error: "Failed to scan receipt carbon impact.", details: errorDetails });
   }
 });
 
@@ -899,9 +900,10 @@ You MUST respond strictly in valid minified JSON format matching this schema:
 
     const parsedRoutes = JSON.parse(response.text?.trim() || "[]");
     res.json(parsedRoutes);
-  } catch (err: any) {
-    console.error("Gemini Route Err:", err);
-    res.status(500).json({ error: "Route analysis failed", details: err.message });
+  } catch (err: unknown) {
+    const errorDetails = err instanceof Error ? err.message : String(err);
+    console.error("Gemini Route Err:", errorDetails);
+    res.status(500).json({ error: "Route analysis failed", details: errorDetails });
   }
 });
 

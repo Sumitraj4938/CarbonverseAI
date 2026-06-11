@@ -42,7 +42,7 @@ describe('QuestsSection Component', () => {
     };
     render(<QuestsSection userProfile={mockProfile} onQuestCompleted={handleCompletion} />);
     
-    const completeButton = screen.getAllByRole('button').filter(b => !b.disabled && b.querySelector('svg.lucide-plus'))[0];
+    const completeButton = screen.getAllByRole('button').filter(b => !(b as HTMLButtonElement).disabled && b.querySelector('svg.lucide-plus'))[0];
     fireEvent.click(completeButton);
 
     await waitFor(() => {

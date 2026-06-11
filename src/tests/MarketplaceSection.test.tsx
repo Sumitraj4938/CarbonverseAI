@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import MarketplaceSection from '../components/MarketplaceSection';
 
@@ -29,7 +29,7 @@ describe('MarketplaceSection Component', () => {
     expect(alertMock).toHaveBeenCalled();
     vi.unstubAllGlobals();
     
-    // Offsets shouldn't be visible
+    // Offsets shouldn't be visible 
     expect(screen.queryByText('Acre Amazonian Rainforest Reforestation')).toBeNull();
   });
 

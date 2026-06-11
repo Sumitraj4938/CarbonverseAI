@@ -6,9 +6,11 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { EmissionBreakdown } from '../types';
 import DailyCarbonGoal from './DailyCarbonGoal';
 
+import { Session } from '@supabase/supabase-js';
+
 interface TwinSectionProps {
   userBreakdown?: EmissionBreakdown;
-  onSessionChange: (session: any) => void;
+  onSessionChange: (session: Session | null) => void;
   supabaseUserId: string | null;
   onSyncRequest: () => void;
   syncing: boolean;
@@ -168,17 +170,17 @@ export default function TwinSection({
               <label 
                 key={sw.id} 
                 className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer select-none ${
-                  (switches as any)[sw.id] 
+                  switches[sw.id as keyof typeof switches] 
                     ? 'bg-carbon-primary/5 border-carbon-primary/30' 
                     : 'bg-slate-900/30 border-slate-900/80 hover:border-slate-800'
                 }`}
               >
                 <input 
                   type="checkbox"
-                  checked={(switches as any)[sw.id]}
+                  checked={switches[sw.id as keyof typeof switches]}
                   onChange={() => setSwitches({
                     ...switches,
-                    [sw.id]: !(switches as any)[sw.id]
+                    [sw.id]: !switches[sw.id as keyof typeof switches]
                   })}
                   className="mt-1 w-4 h-4 rounded border-slate-800 text-carbon-primary accent-carbon-primary focus:ring-0"
                 />

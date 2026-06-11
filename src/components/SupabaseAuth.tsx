@@ -8,8 +8,10 @@ import {
 import Logo from './Logo';
 import LoginLogo from './LoginLogo';
 
+import { Session } from '@supabase/supabase-js';
+
 interface SupabaseAuthProps {
-  onSessionChange: (session: any) => void;
+  onSessionChange: (session: Session | null) => void;
   userId: string | null;
   onSyncRequest: () => void;
   syncing: boolean;
@@ -78,7 +80,7 @@ export default function SupabaseAuth({ onSessionChange, userId, onSyncRequest, s
         };
         setSuccessMessage(isSignUp ? "Account created successfully!" : "Successfully logged in!");
         setUserEmail(email);
-        onSessionChange(fakeSession);
+        onSessionChange(fakeSession as unknown as Session);
         setAuthLoading(false);
       }, 700);
       return;
@@ -121,8 +123,8 @@ export default function SupabaseAuth({ onSessionChange, userId, onSyncRequest, s
           onSessionChange(data.session);
         }
       }
-    } catch (err: any) {
-      setErrorMessage(err.message || "An authentication error occurred.");
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : "An authentication error occurred.");
     } finally {
       setAuthLoading(false);
     }
@@ -136,8 +138,8 @@ export default function SupabaseAuth({ onSessionChange, userId, onSyncRequest, s
       onSessionChange(null);
       setUserEmail(null);
       setSuccessMessage("Logged out successfully.");
-    } catch (err: any) {
-      setErrorMessage(err.message || "Logout failed.");
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : "Logout failed.");
     } finally {
       setAuthLoading(false);
     }
