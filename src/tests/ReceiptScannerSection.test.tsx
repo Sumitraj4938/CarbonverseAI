@@ -157,6 +157,15 @@ describe('AI Carbon Receipt Scanner Component', () => {
       });
     } as any;
     
+    globalFetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        sustainabilityScore: 75,
+        totalReceiptCO2Kg: 5.5,
+        scannedItems: []
+      })
+    });
+
     const fileInput = document.querySelector('input[type="file"]')!;
     fireEvent.change(fileInput, { target: { files: [validFile] } });
     

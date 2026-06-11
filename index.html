@@ -4,6 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CarbonSteps</title>
+    <!-- Prevent cross-fetch or isomorphic-fetch from throwing Uncaught TypeError by ignoring sets -->
+    <script>
+      (function() {
+        var baseObj = typeof globalThis !== 'undefined' ? globalThis : (typeof window !== 'undefined' ? window : null);
+        if (baseObj && baseObj.fetch) {
+          const actualFetch = baseObj.fetch;
+          try {
+            Object.defineProperty(baseObj, 'fetch', {
+              get: function() { return actualFetch; },
+              set: function(val) { /* safely ignore any attempts to overwrite fetch */ },
+              configurable: true,
+              enumerable: true
+            });
+          } catch (e) {
+            console.warn('Could not intercept fetch', e);
+          }
+        }
+      })();
+    </script>
     <!-- Preconnect optimizer entries for cross-origin Google Font hosting -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
