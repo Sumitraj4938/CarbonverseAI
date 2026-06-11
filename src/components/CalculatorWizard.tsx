@@ -120,7 +120,7 @@ export default function CalculatorWizard({ onCalculationComplete, currentData }:
       </div>
 
       {/* Progress indicators wrapper */}
-      <div className="grid grid-cols-5 gap-2 mb-8">
+      <div className="grid grid-cols-5 gap-2 mb-8" role="tablist" aria-label="Calculator Steps Progression">
         {steps.map((s, idx) => {
           const StepIcon = s.icon;
           const isActive = idx === step;
@@ -128,7 +128,11 @@ export default function CalculatorWizard({ onCalculationComplete, currentData }:
           return (
             <button 
               key={s.id}
+              role="tab"
               onClick={() => setStep(idx)}
+              aria-selected={isActive}
+              aria-current={isActive ? 'step' : undefined}
+              aria-label={`Step ${idx + 1} of ${steps.length}: ${s.title}`}
               className={`flex flex-col items-center gap-2 transition-all p-2 rounded-lg ${
                 isActive ? 'bg-white/10 text-carbon-primary' : isDone ? 'text-carbon-secondary' : 'text-slate-500'
               }`}
@@ -166,11 +170,12 @@ export default function CalculatorWizard({ onCalculationComplete, currentData }:
         {step === 0 && (
           <div className="space-y-4 animate-fadeIn">
             <div>
-              <label className="flex justify-between text-sm text-slate-300 mb-2">
+              <label htmlFor="calc-commute-miles" className="flex justify-between text-sm text-slate-300 mb-2">
                 <span>Commute Miles per Week (Conventional Travel):</span>
                 <span className="font-mono text-carbon-primary">{formData.transportation.carMiles} mi</span>
               </label>
               <input 
+                id="calc-commute-miles"
                 type="range" min="0" max="800" step="10"
                 value={formData.transportation.carMiles}
                 onChange={(e) => setFormData({
@@ -183,8 +188,9 @@ export default function CalculatorWizard({ onCalculationComplete, currentData }:
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Fuel or Engine Type:</label>
+                <label htmlFor="calc-fuel-type" className="text-xs text-slate-400 block mb-1">Fuel or Engine Type:</label>
                 <select 
+                  id="calc-fuel-type"
                   value={formData.transportation.carType}
                   onChange={(e: any) => setFormData({
                     ...formData,
@@ -199,8 +205,9 @@ export default function CalculatorWizard({ onCalculationComplete, currentData }:
                 </select>
               </div>
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Flights (Medium/Long range per year):</label>
+                <label htmlFor="calc-flights-count" className="text-xs text-slate-400 block mb-1">Flights (Medium/Long range per year):</label>
                 <input 
+                  id="calc-flights-count"
                   type="number" min="0" max="30"
                   value={formData.transportation.flightsCount}
                   onChange={(e) => setFormData({
@@ -213,11 +220,12 @@ export default function CalculatorWizard({ onCalculationComplete, currentData }:
             </div>
 
             <div>
-              <label className="flex justify-between text-sm text-slate-300 mb-2">
+              <label htmlFor="calc-public-transit" className="flex justify-between text-sm text-slate-300 mb-2">
                 <span>Public Transit (Hours spent weekly):</span>
                 <span className="font-mono text-carbon-secondary">{formData.transportation.publicTransitHours} hrs</span>
               </label>
               <input 
+                id="calc-public-transit"
                 type="range" min="0" max="40" step="1"
                 value={formData.transportation.publicTransitHours}
                 onChange={(e) => setFormData({
@@ -233,11 +241,12 @@ export default function CalculatorWizard({ onCalculationComplete, currentData }:
         {step === 1 && (
           <div className="space-y-4 animate-fadeIn">
             <div>
-              <label className="flex justify-between text-sm text-slate-300 mb-2">
+              <label htmlFor="calc-monthly-kwh" className="flex justify-between text-sm text-slate-300 mb-2">
                 <span>Monthly Electricity Consumption:</span>
                 <span className="font-mono text-carbon-primary">{formData.electricity.monthlyKwh} kWh</span>
               </label>
               <input 
+                id="calc-monthly-kwh"
                 type="range" min="50" max="1500" step="25"
                 value={formData.electricity.monthlyKwh}
                 onChange={(e) => setFormData({
@@ -250,11 +259,12 @@ export default function CalculatorWizard({ onCalculationComplete, currentData }:
             </div>
 
             <div>
-              <label className="flex justify-between text-sm text-slate-300 mb-2">
+              <label htmlFor="calc-renewable-ratio" className="flex justify-between text-sm text-slate-300 mb-2">
                 <span>Renewable Energy Share (Carbon offsets / Green power tariff):</span>
                 <span className="font-mono text-carbon-secondary">{Math.round(formData.electricity.renewableRatio * 100)}% Green</span>
               </label>
               <input 
+                id="calc-renewable-ratio"
                 type="range" min="0" max="1" step="0.1"
                 value={formData.electricity.renewableRatio}
                 onChange={(e) => setFormData({
@@ -270,8 +280,8 @@ export default function CalculatorWizard({ onCalculationComplete, currentData }:
         {step === 2 && (
           <div className="space-y-4 animate-fadeIn">
             <div>
-              <label className="text-xs text-slate-400 block mb-1">Primary Dietary Pattern:</label>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+              <span className="text-xs text-slate-400 block mb-2" id="dietary-pattern-label">Primary Dietary Pattern:</span>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-5" role="radiogroup" aria-labelledby="dietary-pattern-label">
                 {[
                   { value: 'vegan', label: 'Vegan', desc: 'No animal products' },
                   { value: 'vegetarian', label: 'Veg', desc: 'Dairy but no meat' },
@@ -282,6 +292,9 @@ export default function CalculatorWizard({ onCalculationComplete, currentData }:
                   <button
                     key={diet.value}
                     type="button"
+                    role="radio"
+                    aria-checked={formData.food.dietType === diet.value}
+                    aria-label={`${diet.label}: ${diet.desc}`}
                     onClick={() => setFormData({
                       ...formData,
                       food: { ...formData.food, dietType: diet.value as any }
@@ -300,11 +313,12 @@ export default function CalculatorWizard({ onCalculationComplete, currentData }:
             </div>
 
             <div>
-              <label className="flex justify-between text-sm text-slate-300 mb-2">
+              <label htmlFor="calc-waste-ratio" className="flex justify-between text-sm text-slate-300 mb-2">
                 <span>Food Waste frequency score (spoilt food thrown away):</span>
                 <span className="font-mono text-amber-400">{formData.food.wasteRatio}/10 (Intensity)</span>
               </label>
               <input 
+                id="calc-waste-ratio"
                 type="range" min="0" max="10" step="1"
                 value={formData.food.wasteRatio}
                 onChange={(e) => setFormData({
@@ -319,11 +333,12 @@ export default function CalculatorWizard({ onCalculationComplete, currentData }:
 
         {step === 3 && (
           <div className="space-y-4 animate-fadeIn">
-            <h5 className="text-[11px] text-slate-400 font-mono uppercase tracking-wider mb-2">Configure Estimated Monthly Outlay</h5>
-            <div className="grid grid-cols-3 gap-4">
+            <span id="outlay-title" className="text-[11px] text-slate-400 font-mono uppercase tracking-wider mb-2 block">Configure Estimated Monthly Outlay</span>
+            <div className="grid grid-cols-3 gap-4" role="group" aria-labelledby="outlay-title">
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Textiles & Apparel ($):</label>
+                <label htmlFor="calc-clothing-spend" className="text-xs text-slate-400 block mb-1">Textiles & Apparel ($):</label>
                 <input 
+                  id="calc-clothing-spend"
                   type="number" min="0" max="1000"
                   value={formData.shopping.clothingSpend}
                   onChange={(e) => setFormData({
@@ -335,8 +350,9 @@ export default function CalculatorWizard({ onCalculationComplete, currentData }:
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Electronics devices ($):</label>
+                <label htmlFor="calc-electronics-spend" className="text-xs text-slate-400 block mb-1">Electronics devices ($):</label>
                 <input 
+                  id="calc-electronics-spend"
                   type="number" min="0" max="2500"
                   value={formData.shopping.electronicsSpend}
                   onChange={(e) => setFormData({
@@ -348,8 +364,9 @@ export default function CalculatorWizard({ onCalculationComplete, currentData }:
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 block mb-1">General household goods ($):</label>
+                <label htmlFor="calc-misc-spend" className="text-xs text-slate-400 block mb-1">General household goods ($):</label>
                 <input 
+                  id="calc-misc-spend"
                   type="number" min="0" max="1500"
                   value={formData.shopping.miscSpend}
                   onChange={(e) => setFormData({
@@ -367,11 +384,12 @@ export default function CalculatorWizard({ onCalculationComplete, currentData }:
         {step === 4 && (
           <div className="space-y-4 animate-fadeIn">
             <div>
-              <label className="flex justify-between text-sm text-slate-300 mb-2">
+              <label htmlFor="calc-daily-showers" className="flex justify-between text-sm text-slate-300 mb-2">
                 <span>Daily average Shower duration:</span>
                 <span className="font-mono text-carbon-primary">{formData.water.dailyShowers} minutes</span>
               </label>
               <input 
+                id="calc-daily-showers"
                 type="range" min="2" max="30" step="1"
                 value={formData.water.dailyShowers}
                 onChange={(e) => setFormData({
@@ -383,11 +401,12 @@ export default function CalculatorWizard({ onCalculationComplete, currentData }:
             </div>
 
             <div>
-              <label className="flex justify-between text-sm text-slate-300 mb-2">
+              <label htmlFor="calc-appliances-weekly" className="flex justify-between text-sm text-slate-300 mb-2">
                 <span>Washing appliances run weekly (Dishwasher / Laundry dry cycles):</span>
                 <span className="font-mono text-carbon-secondary">{formData.water.appliancesWeekly} loads</span>
               </label>
               <input 
+                id="calc-appliances-weekly"
                 type="range" min="0" max="20" step="1"
                 value={formData.water.appliancesWeekly}
                 onChange={(e) => setFormData({

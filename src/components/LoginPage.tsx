@@ -164,8 +164,10 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
           <form onSubmit={handleAuthSubmit} className="space-y-4">
             {isSignUp && (
               <div className="relative">
-                <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                <label htmlFor="reg-name" className="sr-only">Full Name</label>
+                <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" aria-hidden="true" />
                 <input
+                  id="reg-name"
                   type="text"
                   placeholder="Full Name (e.g. Raj Sumit)"
                   value={name}
@@ -177,8 +179,10 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
             )}
 
             <div className="relative">
-              <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+              <label htmlFor="login-email" className="sr-only">Email Address</label>
+              <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" aria-hidden="true" />
               <input
+                id="login-email"
                 type="email"
                 placeholder="Email Address"
                 value={email}
@@ -189,8 +193,10 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
             </div>
 
             <div className="relative">
-              <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+              <label htmlFor="login-password" className="sr-only">Password</label>
+              <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" aria-hidden="true" />
               <input
+                id="login-password"
                 type={showPassword ? "text" : "password"}
                 placeholder="Secure Password (min. 6 characters)"
                 value={password}
@@ -202,9 +208,10 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
                 className="absolute right-3.5 top-3.5 text-slate-500 hover:text-white transition-colors cursor-pointer"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
               </button>
             </div>
 

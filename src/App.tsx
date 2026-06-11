@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import LandingPage from './components/LandingPage';
 import TwinSection from './components/TwinSection';
-import ExtraControlsDrawer from './components/ExtraControlsDrawer';
 import Logo from './components/Logo';
 import LoginLogo from './components/LoginLogo';
 import { CarbonProfile, CarbonCalculatorData, EmissionBreakdown, LeaderboardUser } from './types';
@@ -23,6 +22,7 @@ const RoutePlannerSection = lazy(() => import('./components/RoutePlannerSection'
 const QuestsSection = lazy(() => import('./components/QuestsSection'));
 const MarketplaceSection = lazy(() => import('./components/MarketplaceSection'));
 const LoginPage = lazy(() => import('./components/LoginPage'));
+const ExtraControlsDrawer = lazy(() => import('./components/ExtraControlsDrawer'));
 
 // Preset leaderboard profiles representing standard cohorts
 const INITIAL_LEADERBOARD: LeaderboardUser[] = [
@@ -279,14 +279,16 @@ export default function App() {
       </div>
 
       {/* Extra Controls Drawer */}
-      <ExtraControlsDrawer
-        isOpen={isExtraDrawerOpen}
-        onClose={() => setIsExtraDrawerOpen(false)}
-        onSessionChange={handleSessionChange}
-        supabaseUserId={supabaseUserId}
-        onSyncRequest={handleSyncRequest}
-        syncing={syncing}
-      />
+      <Suspense fallback={null}>
+        <ExtraControlsDrawer
+          isOpen={isExtraDrawerOpen}
+          onClose={() => setIsExtraDrawerOpen(false)}
+          onSessionChange={handleSessionChange}
+          supabaseUserId={supabaseUserId}
+          onSyncRequest={handleSyncRequest}
+          syncing={syncing}
+        />
+      </Suspense>
 
       {/* Main Header bar */}
       <header className="border-b border-emerald-500/10 bg-[#0B130E]/85 backdrop-blur-md sticky top-0 z-40">

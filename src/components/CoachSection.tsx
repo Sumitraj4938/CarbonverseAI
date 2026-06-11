@@ -342,8 +342,10 @@ export default function CoachSection({ userBreakdown }: CoachSectionProps) {
 
           {/* Local Language Selector Dropdown inside the Widget Header */}
           <div className="flex items-center gap-2 bg-slate-950/60 border border-white/10 px-3 py-1.5 rounded-xl">
-            <Globe className="w-3.5 h-3.5 text-carbon-primary animate-pulse" />
+            <Globe className="w-3.5 h-3.5 text-carbon-primary animate-pulse" aria-hidden="true" />
+            <label htmlFor="coach-lang-select" className="sr-only">Select Coaching Language</label>
             <select
+              id="coach-lang-select"
               value={selectedLanguage}
               onChange={handleLanguageChange}
               className="bg-transparent text-xs text-white border-none outline-none font-medium cursor-pointer"
@@ -453,7 +455,9 @@ export default function CoachSection({ userBreakdown }: CoachSectionProps) {
           }}
           className="p-4 bg-slate-950/40 border-t border-slate-900 flex gap-3"
         >
+          <label htmlFor="coach-chat-input" className="sr-only">Ask AI Coach for carbon footprint questions</label>
           <input
+            id="coach-chat-input"
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -464,9 +468,10 @@ export default function CoachSection({ userBreakdown }: CoachSectionProps) {
           <button
             type="submit"
             disabled={!input.trim() || loading}
+            aria-label="Send message to AI Coach"
             className="w-11 h-11 bg-gradient-to-r from-carbon-primary to-carbon-secondary hover:brightness-110 text-carbon-dark font-bold rounded-xl flex items-center justify-center cursor-pointer transition-all disabled:opacity-40"
           >
-            <Send className="w-5 h-5" />
+            <Send className="w-5 h-5" aria-hidden="true" />
           </button>
         </form>
       </div>

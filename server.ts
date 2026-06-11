@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import dotenv from "dotenv";
 import helmet from "helmet";
+import compression from "compression";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { GoogleGenAI, Type } from "@google/genai";
@@ -10,6 +11,9 @@ import { createServer as createViteServer } from "vite";
 dotenv.config();
 
 const app = express();
+
+// Apply dynamic compression middleware
+app.use(compression());
 
 // Set up security headers via Helmet
 app.use(
@@ -737,24 +741,28 @@ app.post("/api/gemini/receipt", async (req, res) => {
 
   const systemInstructions = `You are the Expert Carbon Receipt Scanner on the CarbonVerse AI Platform.
 Analyze the provided shopping receipt itemization or receipt contents.
-Extract the top 3-4 items from this receipt that carry the highest hidden carbon intensity (production, transport, processing).
-Calculate of estimate:
+Extract the top 3-5 items from this receipt that carry the highest hidden carbon intensity (production, transport, processing).
+Calculate or estimate:
 - Item name
 - Extracted quantity
 - Estimated Greenhouse gas (GHG) footprint in CO2 kg
 - Sustainability Rating (Green / Amber / Red)
 - Eco-friendly Alternative selection that achieves lower footprints.
+- The estimated CO2 kg footprint of the suggested eco-friendly alternative item.
+- An overall sustainability score for the entire receipt from 0 to 100 (where 100 is extremely low impact and sustainable, and <40 is highly carbon-dense).
 
 You MUST respond strictly in valid minified JSON format fitting this exact schema:
 {
   "totalReceiptCO2Kg": number,
+  "sustainabilityScore": number,
   "scannedItems": [
     {
       "name": "string",
-      "quantity": string,
+      "quantity": "string",
       "co2Kg": number,
       "rating": "Green" | "Amber" | "Red",
-      "alternative": "string"
+      "alternative": "string",
+      "alternativeCo2Kg": number
     }
   ],
   "overallVerdict": "string"
@@ -764,14 +772,15 @@ You MUST respond strictly in valid minified JSON format fitting this exact schem
   if (!ai) {
     // Beautiful fallback scanner response
     const mockScannerResult = {
-      totalReceiptCO2Kg: 28.4,
+      totalReceiptCO2Kg: 26.0,
+      sustainabilityScore: 45,
       scannedItems: [
-        { name: "Sirloin Steak (Pack of 2)", quantity: "1x", co2Kg: 18.5, rating: "Red", alternative: "Organic Pea Protein Patties or Salmon Fillet" },
-        { name: "Imported Asparagus (Peru)", quantity: "2x", co2Kg: 5.2, rating: "Red", alternative: "Locally sourced Summer Squash or Broccoli" },
-        { name: "Conventional Almond Milk", quantity: "1L", co2Kg: 1.8, rating: "Amber", alternative: "Local Oat Milk (lower transportation & water impact)" },
-        { name: "Recycled Dishwasher Pods", quantity: "1x", co2Kg: 0.5, rating: "Green", alternative: "None needed (already environment friendly choice)" }
+        { name: "Sirloin Beef Steak", quantity: "1x", co2Kg: 16.8, rating: "Red", alternative: "Impossible meat patties or local Trout fillet", alternativeCo2Kg: 2.1 },
+        { name: "Imported Cherries (Peru)", quantity: "1 Pack", co2Kg: 4.8, rating: "Red", alternative: "Locally sourced Organic Apples", alternativeCo2Kg: 0.6 },
+        { name: "Regular Almond Milk (Imported)", quantity: "1L", co2Kg: 2.1, rating: "Amber", alternative: "Local Oat Milk (lower transport & water cost)", alternativeCo2Kg: 0.6 },
+        { name: "Recycled Trash Bags", quantity: "1 pack", co2Kg: 0.5, rating: "Green", alternative: "No changes needed (eco optimization active)", alternativeCo2Kg: 0.5 }
       ],
-      overallVerdict: "This receipt shows a carbon-intense purchasing profile, predominantly driven by high beef footprint and air-freighted imported produce. Transitioning to local vegetables and alternative plant proteins would offset up to 70% of this receipt's carbon cost immediately."
+      overallVerdict: "Your scanner identified premium beef steak as the carbon anchor in this receipt. Beef represents 65% of cumulative carbon weight due to land clearance footprints. Swapping high-methane beef with local fish and opting for local seasonal fruits reduces the overall impact by up to 18.5kg today!"
     };
     return res.json(mockScannerResult);
   }
@@ -815,6 +824,18 @@ You MUST respond strictly in valid minified JSON format fitting this exact schem
 
     try {
       const resultObj = JSON.parse(response.text?.trim() || "{}");
+      // Add dynamic fallback values just in case AI missed any fields
+      if (typeof resultObj.sustainabilityScore !== 'number') {
+        resultObj.sustainabilityScore = Math.max(5, Math.round(100 - (resultObj.totalReceiptCO2Kg * 3)));
+      }
+      if (Array.isArray(resultObj.scannedItems)) {
+        resultObj.scannedItems = resultObj.scannedItems.map((item: any) => {
+          if (typeof item.alternativeCo2Kg !== 'number') {
+            item.alternativeCo2Kg = item.rating === 'Green' ? item.co2Kg : Math.round((item.co2Kg * 0.2) * 10) / 10;
+          }
+          return item;
+        });
+      }
       res.json(resultObj);
     } catch (parseErr) {
       console.error("Receipt parsing error for:", response.text);
@@ -895,8 +916,20 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
+    
+    // Serve static files with custom headers and 1-year max-age caching for fingerprint assets
+    app.use(express.static(distPath, {
+      maxAge: "1d",
+      setHeaders: (res, filePath) => {
+        if (filePath.match(/\.(js|css|woff2|webp|png|jpg|jpeg|svg|gif)$/i)) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        }
+      }
+    }));
+    
     app.get("*", (req, res) => {
+      // Never cache the index.html fallback to keep app updates fresh
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
